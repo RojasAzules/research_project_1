@@ -2,29 +2,44 @@
 title: "4 pager"
 author: "David Rojas"
 date: "9/5/2021"
-output: pdf_document
+output:
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE,
+                      message = FALSE,
+                      warning = FALSE)
+# librerías
+library(tidyverse)
+library(haven)
+library(ggplot2)
+library(lubridate)
 ```
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r generarBases}
+# Cargar bases de casos y etnicidad
+source('./src/depurar_data.R')
 ```
 
-## Including Plots
+## Data (using Riga as an example)
 
-You can also embed plots, for example:
+Example of data set for the first days in Riga.
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r}
+casos %>% filter(NombreUnidadTerritorial == 'Rīga') %>% head()
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+We can see the rate of cases per 100 thousand people through the time.
+
+```{r}
+casos %>% 
+  filter(NombreUnidadTerritorial == 'Rīga') %>%
+  ggplot(aes(x = Fecha, y = tasa_confirmados)) +
+  geom_line() + 
+  labs(title = 'Número de casos x100 mil habitantes (Riga)') + 
+  ylab('# Casos / 1e6 hab')
+
+```
+
+
