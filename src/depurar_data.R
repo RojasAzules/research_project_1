@@ -76,3 +76,7 @@ casos <- casos %>% left_join(etnicidad) %>%
           share_Polish,
           share_Lithuanian,
           share_Other)
+
+
+vaccines <- read_dta('./data/raw/Vaccination_Center_Date_Type_Dose_Panel.dta')
+
