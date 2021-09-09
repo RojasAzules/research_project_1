@@ -1,14 +1,13 @@
 ---
 title: "The effect of Russian misinformation on COVID-19 cases in Latvia"
 author: "David Rojas"
-date: "9/5/2021"
+date: "9/8/2021"
 output:
   pdf_document: default
   extra_dependencies:
     hyperref:
-    - unicode=true
-    - breaklinks=true
-  word_document: default
+    - unicode = true
+    - breaklinks = true
 ---
 \fontsize{11}{18}
 \selectfont
@@ -16,17 +15,14 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE,
                       message = FALSE,
-                      warning = FALSE)
-# librerías
-library(tidyverse)
-library(haven)
-library(ggplot2)
-library(lubridate)
+                      warning = FALSE,
+                      fig.width = 6,
+                      fig.height = 4)
 ```
 
 ```{r generarBases}
-# Cargar bases de casos, etnicidad y vacunas (por si acaso)
-source('./src/depurar_data.R')
+# Cargar datos
+source('./src/calculos.R')
 ```
 
 # Introduction
@@ -126,7 +122,7 @@ Las bases de datos de nuevos casos por unidad territorial se pueden descargar de
 
 La base de datos demográficos corresponde al archivo \verb+Ethnic_nationality_2020_Alone.dta+ que a su vez se deriva del archivo \verb+v17-2020-01-01Polygon.xlsx+.
 
-La base de datos actual se obtiene de juntar estas dos bases anteriores y de generar indicadoras por días y semanas.
+La base de datos actual se obtiene de juntar estas dos bases. El criterio para unir los datos es usar como llave la variable del Nombre de la Unidad Territorial, que en el archivo de casos se llama \verb+Administrativi Teritorialas Vienibas Nosaukums+ y en el de etnicidad \verb+l0_name+.
 
 # Variable description and sources
 
@@ -140,18 +136,41 @@ La variable $rsp_m$ corresponde a la variable \verb+share_Russian+ de la base de
 
 La variable $y_{t,m}$, tasa de nuevos casos por cada cien mil habitantes, se calcula como cien mil veces el cociente entre $casosNuevos_{t,m}$ y $nHabitantes_m$.
 
-La variable $T_t$ será obtenida de la base de eventos de desinformación. Por el momento será generada con indicadoras de día, semana y mes.
+La variable $T_t$ será obtenida de la base de eventos de desinformación. Por el momento será generada con indicadoras de día y semana.
 
 La variable $\mu_{t,m}$ para el número de pruebas realizadas por cada cien mil habitantes en la unidad territorial $m$ a tiempo $t$ no se ha localizado al momento de la realización de este avance.
 
 # Completed and next steps
+
+Se calculan las regresiones para la estrategia empírica propuesta usando variables indicadoras por día. Se muestran en la siguiente tabla los días días en los que se observan los efectos más significativos. Cabe señalar que todos son altamente significativos.
+
+```{r}
+por_dia %>% arrange(`Pr(>|t|)`) %>% head(10) %>% 
+  kbl(booktabs = T)  %>% kable_styling(position = "center",
+                                       latex_options = "striped")
+```
+
+Esto quiere decir por ejemplo que, los días 7 de mayo del 2021 y 10 de diciembre de 2020, se observaron 2.4 casos de Covid 19 adicionales por cada punto porcentual de población rusoparlante en una unidad territorial dada por cada cien mil habitantes.
+
+Se grafican a continuación los dìas en los que se observaron los efectos significativos al 1%. Se puede observar un cluster de días con efectos positivos y significativos durante diciembre y enero. Se pueden apreciar además dos días en octubre de 2020 donde el efecto fue negativo.
+
+```{r}
+por_dia %>% 
+  filter(`Pr(>|t|)` < 0.01) %>% 
+  ggplot(aes(x = Fecha, y = Estimate)) + 
+  geom_point() + 
+  ylab('Nuevos casos') + 
+  xlab('Fecha (2020-2021)') +
+  labs(title = 'Nuevos casos por cada 100 mil habitantes',
+       subtitle = 'Con respecto a la proporción de población rusa')
+```
 
 
 # Example of the data base
 
 En el siguiente repositorio se pueden encontrar los avances del proyecto.  \url{www.github.com/rojasazules/proyecto}.
 
-En la carpeta /data/interim se encuentra el archivo \verb+ejemplo_base.dta+.
+En la carpeta /data/processed se encuentra el archivo \verb+casos.dta+.
 
 Contiene una base con las siguientes columnas.
 

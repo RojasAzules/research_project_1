@@ -1,3 +1,5 @@
+source('src/librerias.R')
+
 ##### 
 # Tabla Covid 19 PA Adm Terit
 #
@@ -52,6 +54,7 @@ reciente <- read.csv('./data/raw/covid_19_pa_adm_terit_new.csv', sep = ';') %>%
   ungroup()
 
 casos <- rbind(casos, reciente)
+rm(reciente)
 
 ##### 
 # Datos de etnicidad por municipio
@@ -75,8 +78,16 @@ casos <- casos %>% left_join(etnicidad) %>%
           share_Ukrainian,
           share_Polish,
           share_Lithuanian,
-          share_Other)
+          share_Other) %>% 
+  select(-CodigoUnidadTerritorial, -Confirmados, -Nuevos, -share_misinformed) %>% 
+  filter(Fecha > '2020-03-19')
+
+rm(etnicidad)
 
 
-vaccines <- read_dta('./data/raw/Vaccination_Center_Date_Type_Dose_Panel.dta')
+# Generar variable de semanas
+casos <- casos %>% 
+  mutate(semana = week(Fecha) + year(Fecha)*100)
 
+write_dta(casos, 'data/processed/casos.dta')
+write_csv(casos, 'data/processed/casos.dta')
