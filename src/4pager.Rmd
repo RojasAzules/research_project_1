@@ -8,6 +8,7 @@ output:
     hyperref:
     - unicode = true
     - breaklinks = true
+  word_document: default
 ---
 \fontsize{11}{18}
 \selectfont
@@ -27,8 +28,17 @@ source('./src/calculos.R')
 
 # Introduction
 
-The introduction should be a brief summary of the core things you will
-present in the rest of the document, and good practice to eventually develop an introduction for your paper.
+Se presenta una estrategia de investigación para investigar el efecto que han tenido las olas de desinformación en lengua rusa sobre temas de vacunación y salud en la tasa de aparición de nuevos casos de Covid-19 en Letonia para las localidades con mayor presencia de hablantes de ruso.
+
+Se presenta un resumen de la literatura que se ha revisado hasta el momento y se plantea replicar una estrategia para detectar efectos de campañas de desinformación sobre vacunas utilizando una estrategia de diferencias en diferencias.
+
+Se propone un argumento teórico y los canales de causalidad que podrían producir un efecto en la tasa de aparición de nuevos casos. Así mismo, se da una breve introducción al contexto social de Letonia, lo que nos ayudará a proponer algunas ideas de controles adicionales para la estrategia empírica.
+
+En las siguientes secciones se describe la estrategia empírica así como las fuentes de datos utilizadas para desarollar los resultados preliminares.
+
+Ante la actual falta de una base de eventos de desinformación, se realizan cálculos preliminares para identificar los días y semanas en los que se presenta un efecto diferenciado y significativo durante la segunda mitad de 2020 y el 2021.
+
+Se proponen siguientes pasos y se expone la base utilizada para la estrategia empírica.
 
 # Relevant literature review
 
@@ -40,7 +50,7 @@ La estrategia empírica de este artículo es relevante puesto que puede ser adap
 
 Para contextualizar las condiciones de las poblaciones rusas en los territorios bálticos, se utilizará "Russians as a Minority in Contemporary Baltic States" (Kirch, 1992).
 
-Para contextualizar la naturaleza y el desarrollo de las narrativas pro-Rusas diseminadas en los territorios Bálticos durante la pandemia Covid-19 se utilizará "The Kremlin’s strategic narratives on the Baltic states during the COVID-19 crisis" (Mfilder, 2020).
+Para contextualizar la naturaleza y el desarrollo de las narrativas pro-Rusas diseminadas en los territorios Bálticos durante la pandemia Covid-19 se utilizará "The Kremlin’s strategic narratives on the Baltic states during the COVID-19 crisis" (Mölder, 2020).
 
 # Theoretical argument and predictions
 
@@ -48,7 +58,7 @@ La pandemia Covid-19 ha provocado una coyuntura en temas de salud, económicos, 
 
 Este contexto ha sido aprovechado por algunos grupos internacionales de poder para diseminar narrativas que ponen en tela de juicio las narrativas oficiales de algunos Estados, en un afán de mermar la confianza de los ciudadanos y hacer avanzar su agenda política.
 
-Letonia, junto los demás países Bàlticos, se ha visto sumergida en una oleada de propaganda, principalmente en lengua rusa, que pretende generar un efecto de desconfianza y desinformación en el tema de las vacunas (dirigiendo las narrativas tanto a los preparados biológicos como a la capacidad del gobierno letón de administrar la emergencia sanitaria).
+Letonia, junto los demás países Bálticos, se ha visto sumergida en una oleada de propaganda, principalmente en lengua rusa, que pretende generar un efecto de desconfianza y desinformación en el tema de las vacunas (dirigiendo las narrativas tanto a los preparados biológicos como a la capacidad del gobierno letón de administrar la emergencia sanitaria).
 
 Las unidades territoriales donde la presencia de hablantes de lengua rusa es mayor, podrían verse especialmente afectadas en caso de que las personas eligieran diferenciar su comportamiento del de otras unidades territoriales con otra composición demográfica. Esto a partir de la desinformación que las personas en estas unidades territoriales consumen.
 
@@ -58,7 +68,7 @@ Se puede presentar un efecto diferenciado en la tasa de aparición de nuevos cas
 
 \item Una mayor exposición a campañas anti-vacunas puede provocar una disminución en la confianza en las vacunas y, por ende, una disminución en la tasa de vacunación. Al tener un bajo porcentaje de población vacunada, la unidad territorial es más sensible a la aparición de nuevos casos.
 
-\item Una mayor exposiciòn a campañas de desinformación (aunado a una menor disponibilida de información oficial en lengua rusa) puede generar desconfianza en los servicios de salud. Personas con poca confianza en los servicios de salud podrían optar por no buscar tratamiento médico ante un caso de contagio, lo que puede incidir en la prevalencia de la enfermedad en estas unidades territoriales.
+\item Una mayor exposición a campañas de desinformación (aunado a una menor disponibilida de información oficial en lengua rusa) puede generar desconfianza en los servicios de salud. Personas con poca confianza en los servicios de salud podrían optar por no buscar tratamiento médico ante un caso de contagio, lo que puede incidir en la prevalencia de la enfermedad en estas unidades territoriales.
 
 \item Una falta de acceso a información gubernamental de calidad en lengua rusa puede provocar una falta de coordinación en la estrategia de contención de la enfermedad.
 
@@ -80,7 +90,7 @@ En Letonia, una de cada cuatro personas tienen ascendencia rusa, pero además, d
 
 En mayo de 2020 más de la mitad de eventos virales de desinformación sobre Covid-19 en internet en los países bálticos, ocurrieron en Letonia. Además, siete de cada diez fake news se diseminaron a través de Facebook. \footnote{Latvia had the widest spread of COVID-19 related disinformation in May, https://www.debunkeu.org/post/debunk-eu-latvia-had-the-widest-spread-of-covid-19-related-disinformation-in-may}
 
-Es importante mencionar que Letonia se adhiere plenamente al portafolio de vacunación de la Unión Europea, el cual es aprovado por la Agencia Europea de Medicamentos con sede en Àmsterdam. \footnote{Which piece of the puzzle is Latvia in the Covid-19 vaccination campaign of European Union? https://www.debunkeu.org/post/which-piece-of-the-puzzle-is-latvia-in-the-covid-19-vaccination-campaign-of-european-union}
+Es importante mencionar que Letonia se adhiere plenamente al portafolio de vacunación de la Unión Europea, el cual es aprovado por la Agencia Europea de Medicamentos con sede en ámsterdam. \footnote{Which piece of the puzzle is Latvia in the Covid-19 vaccination campaign of European Union? https://www.debunkeu.org/post/which-piece-of-the-puzzle-is-latvia-in-the-covid-19-vaccination-campaign-of-european-union}
 
 # Empirical strategy
 
@@ -142,20 +152,22 @@ La variable $\mu_{t,m}$ para el número de pruebas realizadas por cada cien mil 
 
 # Completed and next steps
 
+## Indicadoras por día
+
 Se calculan las regresiones para la estrategia empírica propuesta usando variables indicadoras por día. Se muestran en la siguiente tabla los días días en los que se observan los efectos más significativos. Cabe señalar que todos son altamente significativos.
 
 ```{r}
-por_dia %>% arrange(`Pr(>|t|)`) %>% head(10) %>% 
+resultados_por_dia %>% arrange(`Pr(>|t|)`) %>% head(10) %>% 
   kbl(booktabs = T)  %>% kable_styling(position = "center",
                                        latex_options = "striped")
 ```
 
 Esto quiere decir por ejemplo que, los días 7 de mayo del 2021 y 10 de diciembre de 2020, se observaron 2.4 casos de Covid 19 adicionales por cada punto porcentual de población rusoparlante en una unidad territorial dada por cada cien mil habitantes.
 
-Se grafican a continuación los dìas en los que se observaron los efectos significativos al 1%. Se puede observar un cluster de días con efectos positivos y significativos durante diciembre y enero. Se pueden apreciar además dos días en octubre de 2020 donde el efecto fue negativo.
+Se grafican a continuación los días en los que se observaron los efectos significativos al 1%. Se puede observar un cluster de días con efectos positivos y significativos durante diciembre y enero. Se pueden apreciar además dos días en octubre de 2020 donde el efecto fue negativo.
 
 ```{r}
-por_dia %>% 
+resultados_por_dia %>% 
   filter(`Pr(>|t|)` < 0.01) %>% 
   ggplot(aes(x = Fecha, y = Estimate)) + 
   geom_point() + 
@@ -165,25 +177,69 @@ por_dia %>%
        subtitle = 'Con respecto a la proporción de población rusa')
 ```
 
+## Indicadoras por semana
+
+Se repite la estrategia empírica pero esta vez usando indicadoras por semana. Coloquemos en una tabla las semanas con efectos más significativos. Las semanas se indican como \verb+aaaass+, donde \verb+ss+ es el número de semana del año \verb+aaaa+.
+
+```{r}
+resultados_por_semana %>% filter(semana != 202053) %>% arrange(`Pr(>|t|)`) %>% head(10) %>% 
+  kbl(booktabs = T)  %>% kable_styling(position = "center",
+                                       latex_options = "striped")
+```
+
+Podemos confirmar que en las últimas semanas del 2020 y las primeras semanas del 2021 el efecto de aparición de casos de Covid-19 fue más fuerte con respecto a la proporción de hablantes de lengua rusa. Así mismo se confirma el efecto negativo en la semana 42 del 2020.
+
+```{r}
+resultados_por_semana %>% 
+  filter(`Pr(>|t|)` < 0.01, semana != 202053) %>% 
+  mutate(
+    Fecha = case_when(
+      semana-202000 < 100 ~ as.Date(paste(floor(semana/100), 
+                                          semana-202000, 1, sep="-"), "%Y-%U-%u"),
+      TRUE ~ as.Date(paste(floor(semana/100), 
+                           semana-202100-1, 1, sep="-"), "%Y-%U-%u")
+    )
+  ) %>% 
+  ggplot(aes(x = Fecha, y = Estimate)) + 
+  geom_point() + 
+  ylab('Nuevos casos') + 
+  xlab('Fecha (2020-2021)') +
+  labs(title = 'Nuevos casos por cada 100 mil habitantes',
+       subtitle = 'Con respecto a la proporción de población rusa')
+
+```
+
+## Siguientes pasos
+
+- Evaluar el supuesto de tendencias paralelas o ajustar estrategia a partir del resultado.
+
+- Identificar y agregar controles. Especialmente sociodemográficos. E.g. nivel de ingreso per cápita en la unidad territorial.
+
+- Continuar trabajando en la identificación de eventos de desinformación. E.g. identificar google trends olas de búsqueda de información de las vacunas (o de ciertas vacunas específicas).
+
+- Comprender cómo realizar analisis de efectos placebo y pruebas de robustés.
+
+- Seguir escribiendo.
+
+- Considerar controles interactivos con los efectos fijos de tiempo.
 
 # Example of the data base
 
-En el siguiente repositorio se pueden encontrar los avances del proyecto.  \url{www.github.com/rojasazules/proyecto}.
+En el siguiente repositorio se pueden encontrar los avances del proyecto.
+
+\url{github.com/rojasazules/research_project_1}
 
 En la carpeta /data/processed se encuentra el archivo \verb+casos.dta+.
 
 Contiene una base con las siguientes columnas.
 
-\begin{itemize}
-\item
-\item
-\item
-
-\end{itemize}
-
-
-The example of your final database should be how the data should look (and ideally is looking) right before you can implement the empirical strategy. So, I do not want you to show me photos of the original data sets and say that somehow magically those will end up being the database you need to run the analysis. So, there are two options. First, you actually have that database, and thus I would like to put a print screen and explain to me broadly what you did. Second, you do not have the data, and thus I would like you to put a print screen of an Excel of the data set you need to arrive to so that you can run the analysis. You will also need to explain every single detail you need to do with each data set (not vaguely, but very precisely), including aggregation (if applicable), how you will merge them (exactly using which variables in each data set), etc to arrive to how the data should look like right before you can implement the empirical strategy
-
+- Fecha. En formato aaaa-mm-dd.
+- ut. Código numérico para la unidad territorial.
+- Nombre Unidad Territorial.
+- tasa_confirmados. Nuevos casos por día por unidad territorial por cada 100 mil habitantes.
+- share_Russian, share_Latvian, share_Belarusian, share_Ukrainian, share_Polish, share_Lithuanian, share_Other. Variables de composición demográfica de la unidad territorial.
+- Total. Número total de habitantes por unidad territorial
+- Semana. En formato aaaass. Indica el año y número de semana.
 
 ## Bibliography
 
@@ -191,6 +247,10 @@ The example of your final database should be how the data should look (and ideal
 
 \item The Latvian Open Data Portal. https://data.gov.lv/dati/eng/dataset/covid-19
 
-\item 
+\item (Kirch, 1992) Russians as a Minority in Contemporary Baltic States. Aksel Kirch. Bulletin of Peace Proposals , June 1992, Vol. 23, No. 2 (June 1992), pp. 205-212. 
+
+\item (Martínez, 2021) In Vaccines We Trust? The Effects of the CIA’s Vaccine Ruse on Immunization in Pakistan, Journal of the European Economic Association, Monica Martinez-Bravo, Andreas Stegmann, 2021;, jvab018, https://doi.org/10.1093/jeea/jvab018
+
+\item (Mölder, 2020) The Kremlin’s strategic narratives on the Baltic states during the COVID-19 crisis. Holger Mölder and Vladimir Sazonov. December 2020. Kwartalnik Bellona.
 
 \end{itemize}

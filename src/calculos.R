@@ -43,10 +43,10 @@ if (tenemosTiempo) {
 
 #####
 # Convertimos resultados a df y agregamos variables de día y semana
-por_dia <- as.data.frame(t(resultados_por_dia)) %>% 
+resultados_por_dia <- as.data.frame(t(resultados_por_dia)) %>% 
   mutate(Fecha = unique(casos$Fecha)) %>% 
   relocate(Fecha)
-por_semana <- as.data.frame(t(resultados_por_semana)) %>% 
+resultados_por_semana <- as.data.frame(t(resultados_por_semana)) %>% 
   mutate(semana = unique(casos$semana)) %>% 
   relocate(semana)
 
