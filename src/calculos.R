@@ -50,3 +50,28 @@ resultados_por_semana <- as.data.frame(t(resultados_por_semana)) %>%
   mutate(semana = unique(casos$semana)) %>% 
   relocate(semana)
 
+#####
+i_want_belarrusian <- FALSE
+
+if (i_want_belarrusian) {
+  reg_por_semana <- function(sem){
+    coeficiente <- casos %>%
+      mutate(tratamiento = semana == sem,
+             interaccion = share_Belarusian * tratamiento) %>%
+      lm(formula = tasa_confirmados ~ interaccion + factor(Fecha) + factor(ut)) %>%
+      coeftest(., vcov. = vcov(., type = "HC0"))
+
+    coeficiente['interaccion',]
+  }
+
+  belarrusian_por_semana <- sapply(as.list(unique(casos$semana)), reg_por_semana)
+  save(belarrusian_por_semana, file= 'data/interim/belarussian_semana.RData')
+
+} else {
+  load('data/interim/belarussian_semana.RData')
+}
+
+belarussian_por_semana <- as.data.frame(t(belarrusian_por_semana)) %>%
+  mutate(semana = unique(casos$semana)) %>%
+  relocate(semana)
+

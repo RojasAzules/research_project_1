@@ -26,6 +26,7 @@ knitr::opts_chunk$set(echo = FALSE,
 source('./src/calculos.R')
 ```
 
+
 # Introduction
 
 Se presenta una estrategia de investigación para investigar el efecto que han tenido las olas de desinformación en lengua rusa sobre temas de vacunación y salud en la tasa de aparición de nuevos casos de Covid-19 en Letonia para las localidades con mayor presencia de hablantes de ruso.
@@ -38,7 +39,12 @@ En las siguientes secciones se describe la estrategia empírica así como las fu
 
 Ante la actual falta de una base de eventos de desinformación, se realizan cálculos preliminares para identificar los días y semanas en los que se presenta un efecto diferenciado y significativo durante la segunda mitad de 2020 y el 2021.
 
+Se identifica una ventana de tiempo de la semana 48 del 2020 a la semana 2 del 2021 cuando los efectos observados en la aparición de casos es significativamente mayor en función de la proporción de población de habla rusa que contenga una unidad territorial dada.
+
+Se agrega una estimación adicional tratando de estimar el efecto en la población de lengua bielorrusa.
+
 Se proponen siguientes pasos y se expone la base utilizada para la estrategia empírica.
+
 
 # Relevant literature review
 
@@ -51,6 +57,7 @@ La estrategia empírica de este artículo es relevante puesto que puede ser adap
 Para contextualizar las condiciones de las poblaciones rusas en los territorios bálticos, se utilizará "Russians as a Minority in Contemporary Baltic States" (Kirch, 1992).
 
 Para contextualizar la naturaleza y el desarrollo de las narrativas pro-Rusas diseminadas en los territorios Bálticos durante la pandemia Covid-19 se utilizará "The Kremlin’s strategic narratives on the Baltic states during the COVID-19 crisis" (Mölder, 2020).
+
 
 # Theoretical argument and predictions
 
@@ -76,6 +83,7 @@ Se puede presentar un efecto diferenciado en la tasa de aparición de nuevos cas
 
 Las causas anteriores pueden generar un aumento en el número de casos por Covid-19 en las unidades territoriales letonas con mayor presencia de rusoparlantes.
 
+
 # Context of the project
 
 El contexto geopolítico y demográfico con el que Letonia entra a la pandemia Covid-19 es sumamente complejo. Con un pasado de república soviética, Letonia forma parte de la OTAN y la Unión Europea desde 2004.
@@ -91,6 +99,7 @@ En Letonia, una de cada cuatro personas tienen ascendencia rusa, pero además, d
 En mayo de 2020 más de la mitad de eventos virales de desinformación sobre Covid-19 en internet en los países bálticos, ocurrieron en Letonia. Además, siete de cada diez fake news se diseminaron a través de Facebook. \footnote{Latvia had the widest spread of COVID-19 related disinformation in May, https://www.debunkeu.org/post/debunk-eu-latvia-had-the-widest-spread-of-covid-19-related-disinformation-in-may}
 
 Es importante mencionar que Letonia se adhiere plenamente al portafolio de vacunación de la Unión Europea, el cual es aprovado por la Agencia Europea de Medicamentos con sede en ámsterdam. \footnote{Which piece of the puzzle is Latvia in the Covid-19 vaccination campaign of European Union? https://www.debunkeu.org/post/which-piece-of-the-puzzle-is-latvia-in-the-covid-19-vaccination-campaign-of-european-union}
+
 
 # Empirical strategy
 
@@ -110,9 +119,11 @@ Donde $\eta_m$ representa efectos fijos por unidad territorial y $\delta_t$ repr
 
 La significancia del coeficiente $\beta$ nos indicará la relevancia de los efectos de las campañas rusas de desinformación sobre Covid-19 en la población de habla rusa en Letonia.
 
+
 ## Posible control
 
 Una de las variables que podría ser utilizada como control es el ingreso per cápita de la unidad territorial $m$. Una población con más o menos ingreso podría ser más o menos proclive a los efectos de la desinformación con respecto a las vacunas (y la confianza en los servicios de salud) y por ende a los efectos de la aparición de nuevos casos.
+
 
 ## ¿Subestimación de casos?
 
@@ -126,6 +137,7 @@ Sea $\mu_{t,m}$ el número de pruebas realizadas por cada cien mil habitantes en
 
 El coeficiente $\gamma$ nos ayudaría a identificar si existe un efecto de sub-testeo en la población de habla rusa.
 
+
 # Data
 
 Las bases de datos de nuevos casos por unidad territorial se pueden descargar del Latvian Open Data Portal. Desde este portal se puede descargar los archivos \verb+covid_19_pa_adm_terit.csv+ y \verb+covid_19_pa_adm_terit_new.csv+ que contienen el detalle de casos.
@@ -133,6 +145,7 @@ Las bases de datos de nuevos casos por unidad territorial se pueden descargar de
 La base de datos demográficos corresponde al archivo \verb+Ethnic_nationality_2020_Alone.dta+ que a su vez se deriva del archivo \verb+v17-2020-01-01Polygon.xlsx+.
 
 La base de datos actual se obtiene de juntar estas dos bases. El criterio para unir los datos es usar como llave la variable del Nombre de la Unidad Territorial, que en el archivo de casos se llama \verb+Administrativi Teritorialas Vienibas Nosaukums+ y en el de etnicidad \verb+l0_name+.
+
 
 # Variable description and sources
 
@@ -149,6 +162,7 @@ La variable $y_{t,m}$, tasa de nuevos casos por cada cien mil habitantes, se cal
 La variable $T_t$ será obtenida de la base de eventos de desinformación. Por el momento será generada con indicadoras de día y semana.
 
 La variable $\mu_{t,m}$ para el número de pruebas realizadas por cada cien mil habitantes en la unidad territorial $m$ a tiempo $t$ no se ha localizado al momento de la realización de este avance.
+
 
 # Completed and next steps
 
@@ -176,6 +190,7 @@ resultados_por_dia %>%
   labs(title = 'Nuevos casos por cada 100 mil habitantes',
        subtitle = 'Con respecto a la proporción de población rusa')
 ```
+
 
 ## Indicadoras por semana
 
@@ -209,11 +224,81 @@ resultados_por_semana %>%
 
 ```
 
-## Siguientes pasos
 
-- Evaluar el supuesto de tendencias paralelas o ajustar estrategia a partir del resultado.
+## Parallel trends assumption
 
-- Identificar y agregar controles. Especialmente sociodemográficos. E.g. nivel de ingreso per cápita en la unidad territorial.
+Para comprobar el supuesto de tendencias paralelas se propondrá el cálculo de efectos lead/lag para detectar efectos de anticipiación. La ecuación original para estimar efectos lead/lad es la siguiente.
+
+\begin{equation}
+y_{t,m} = \tau T_t + \gamma_m + \lambda_t + \sum_{t'=1}^{f} \delta_{t'} T_{t+t'} + \sum_{t'=1}^{l} \delta_{-t'} T_{t-t'} + \epsilon_{t,m}
+\end{equation}
+
+Donde $l$ es el número de rezagos, $f$ es el número de adelantos y $\gamma_m$ y $\lambda_t$ son efectos fijos por unidad territorial y tiempo.
+
+Sin embargo, debido a que en la especificación del modelo original considera una interacción entre el tratamiento y la variable $rsp_m$, se propone considerar el siguiente modelo de lead and lags.
+
+\begin{equation}
+y_{t,m} = \tau (rsp_m \times T_t) + \gamma_m + \lambda_t + \sum_{t'=1}^{f} \delta_{t'} (rsp_m \times T_{t+t'}) + \sum_{t'=1}^{l} \delta_{-t'} (rsp_m \times T_{t-t'}) + \epsilon_{t,m}
+\end{equation}
+
+
+## First canditate to sociodemographic control
+
+Se trabajará con el primer control sociodemográfico que se considera de especial relevancia, el nivel de los salarios por unidad territorial.
+
+Sea $x_m^1$ el salario mensual promedio en euros en la unidad territorial $m$ durante el cuarto trimestre de 2020 (trimestre donde comienza la ventana de tiempo que va de la semana 48 del 2020 a la semana 2 del 2021). Se propone usar la siguiente especificación.
+
+\begin{equation}
+y_{t,m} = \beta (rsp_m \times T_t) + \eta_m + \delta_t + \sum_{t} \Gamma_{t,1} \delta_t \times x_m^1 + \epsilon_{t,m}
+\end{equation}
+
+La variable $x_m^1$ será depurada del archivo \verb_Average monthly wages and salaries in cities and municipalities (in euro) by Gross Net, Sector, Territorial unit and Time period.csv_ de la carpeta \verb_Census Data_ que viene en el Dropbox del proyecto.
+
+En caso de que se agreguen más controles, la especificación que calcularemos será la siguiente.
+
+\begin{equation}
+y_{t,m} = \beta (rsp_m \times T_t) + \eta_m + \delta_t + \sum_{c}^{nControls} \sum_{t} \Gamma_{t,1} \delta_t \times x_m^c + \epsilon_{t,m}
+\end{equation}
+
+
+## Latvia also speaks Belarrusian
+
+Se repite la estrategia empírica pero esta vez observando el efecto relacionado a la cantidad de hablantes de bielorruso. Coloquemos en una tabla las semanas con efectos más significativos. Las semanas se indican como \verb+aaaass+, donde \verb+ss+ es el número de semana del año \verb+aaaa+.
+
+```{r}
+belarussian_por_semana %>% filter(semana != 202053) %>% arrange(`Pr(>|t|)`) %>% head(7) %>% 
+  kbl(booktabs = T)  %>% kable_styling(position = "center",
+                                       latex_options = "striped")
+```
+
+Podemos observar que nos encontramos ante un patrón distinto a los hablantes de ruso en cuanto a la aparición de efectos significativos con respecto a la proporción de hablantes de lengua bielorrusa en una unidad territorial dada.
+
+```{r}
+belarussian_por_semana %>% 
+  filter(`Pr(>|t|)` < 0.01, semana != 202053) %>% 
+  mutate(
+    Fecha = case_when(
+      semana-202000 < 100 ~ as.Date(paste(floor(semana/100), 
+                                          semana-202000, 1, sep="-"), "%Y-%U-%u"),
+      TRUE ~ as.Date(paste(floor(semana/100), 
+                           semana-202100-1, 1, sep="-"), "%Y-%U-%u")
+    )
+  ) %>% 
+  ggplot(aes(x = Fecha, y = Estimate)) + 
+  geom_point() + 
+  ylab('Nuevos casos') + 
+  xlab('Fecha (2020-2021)') +
+  labs(title = 'Nuevos casos por cada 100 mil habitantes',
+       subtitle = 'Con respecto a la proporción de población bielorrusa')
+
+```
+
+
+## Next steps
+
+- Realizar regresión de lead and lags con el tratamiento interactuado con la variable $rsp_m$. 
+
+- Depurar la data de salarios mensuales promedio por unidad territorial.
 
 - Continuar trabajando en la identificación de eventos de desinformación. E.g. identificar google trends olas de búsqueda de información de las vacunas (o de ciertas vacunas específicas).
 
@@ -221,9 +306,8 @@ resultados_por_semana %>%
 
 - Seguir escribiendo.
 
-- Considerar controles interactivos con los efectos fijos de tiempo.
 
-# Example of the data base
+# Example of data base
 
 En el siguiente repositorio se pueden encontrar los avances del proyecto.
 
@@ -241,7 +325,8 @@ Contiene una base con las siguientes columnas.
 - Total. Número total de habitantes por unidad territorial
 - Semana. En formato aaaass. Indica el año y número de semana.
 
-## Bibliography
+
+# Bibliography
 
 \begin{itemize}
 
