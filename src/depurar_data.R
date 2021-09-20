@@ -90,4 +90,4 @@ casos <- casos %>%
   mutate(semana = week(Fecha) + year(Fecha)*100)
 
 write_dta(casos, 'data/processed/casos.dta')
-write_csv(casos, 'data/processed/casos.dta')
+write_csv(casos, 'data/processed/casos.csv')

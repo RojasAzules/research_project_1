@@ -25,7 +25,7 @@ if (tenemosTiempo) {
     coeficiente <- casos %>% 
       mutate(tratamiento = semana == sem,
              interaccion = share_Russian * tratamiento) %>% 
-      lm(formula = tasa_confirmados ~ interaccion + factor(Fecha) + factor(ut)) %>% 
+      lm(formula = tasa_confirmados ~ interaccion + factor(semana) + factor(ut)) %>% 
       coeftest(., vcov. = vcov(., type = "HC0"))
     
     coeficiente['interaccion',]
@@ -74,4 +74,6 @@ if (i_want_belarrusian) {
 belarussian_por_semana <- as.data.frame(t(belarrusian_por_semana)) %>%
   mutate(semana = unique(casos$semana)) %>%
   relocate(semana)
+
+rm(belarrusian_por_semana)
 
