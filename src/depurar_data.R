@@ -79,10 +79,10 @@ casos <- casos %>% left_join(etnicidad) %>%
           share_Polish,
           share_Lithuanian,
           share_Other) %>% 
-  select(-CodigoUnidadTerritorial, -Confirmados, -Nuevos, -share_misinformed) %>% 
+  select(-CodigoUnidadTerritorial, -Confirmados, -share_misinformed) %>% 
   filter(Fecha > '2020-03-19')
 
-rm(etnicidad)
+# rm(etnicidad)
 
 
 # Generar variable de semanas
