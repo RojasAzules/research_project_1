@@ -1,448 +1,272 @@
-# El cálculo de las regresiones por día tarda aprox 3 horas, por semana 3 mins
-# Active estas banderas si desea volver a correr las regresiones
-# De lo contrario se cargaran las que fueron respaldadas en \data\interim
-russian_por_dia <- FALSE
-russian_por_semana <- FALSE
-latvian_por_dia <- FALSE
-latvian_por_semana <- FALSE
-belarussian_por_dia <- FALSE
-belarussian_por_semana <- FALSE
-ukranian_por_semana <- FALSE
-ukranian_por_dia <- FALSE
-polish_por_dia <- FALSE
-polish_por_semana <- FALSE
-lithuanian_por_semana <- FALSE
-lithuanian_por_dia <- FALSE
-other_por_semana <- FALSE
-other_por_dia <- FALSE
-non_latvian_por_semana <- FALSE
-non_latvian_por_dia <- FALSE
-baltic_por_semana <- FALSE
-non_baltic_por_semana <- FALSE
-
-
 #####
 # Cargamos la base
 source('src/depurar_data.R')
 
 #####
-# Generación de las regresiones considerando indicadoras por dìa y semana
-# Russian
+# Generación de las regresiones considerando eventos detectados
+precarga <- TRUE
+if (precarga) {
+  load('data/interim/efecto_acumulado.RData')
+} else {
+  # Suponemos que los efectos de los eventos tienen un periodo de latencia y una
+  # duración. Calcularemos el efecto acumulado de los eventos en la variable
+  # acumulado considerando ocho posibles versiones
+  #     1. Latency = 0, Drag = 1
+  #     2. Latency = 0, Drag = 2
+  #     3. Latency = 0, Drag = 3
+  #     4. Latency = 0, Drag = 4
+  #     5. Latency = 1, Drag = 1
+  #     6. Latency = 1, Drag = 2
+  #     7. Latency = 1, Drag = 3
+  #     8. Latency = 1, Drag = 4
+  # 
+  acumulado <- casos %>% 
+    select(semana) %>% 
+    pull() %>% 
+    unique() %>% 
+    as.data.frame() %>% 
+    rename('semana' = '.') %>% 
+    filter(semana != 202053)
 
-if (russian_por_dia) {
-  reg_por_dia <- function(dia){
-    coeficiente <- casos %>% 
-      mutate(tratamiento = Fecha == dia,
-             interaccion = share_Russian * tratamiento) %>% 
-      lm(formula = tasa_confirmados ~ interaccion + factor(Fecha) + factor(ut)) %>% 
-      coeftest(., vcov. = vcov(., type = "HC0"))
+  semanasConEventos <- eventos %>% 
+    filter(Consider == 1) %>% 
+    select(Date) %>% 
+    mutate(semana = year(Date)*100 + week(Date)) %>% 
+    mutate(semana = replace(semana, semana == 202053, 202052)) %>% 
+    select(semana) %>% 
+    pull()
+  
+  efecto <- function(effect_weeks, total_weeks, latency, drag){
+    # La "estela" es el periodo durante el cual el efecto un evento es observado,
+    # comienza después del periodo de latencia (latency) y tiene una duración en
+    # semanas (drag), 
+    estela <- function(total_weeks, semana, latency, drag){
+      estela <- rep(0, length(total_weeks))
+      for (i in seq(drag)) {
+        estela <- estela + shift(as.integer(total_weeks == semana),
+                                 latency + i - 1)
+      }
+      estela
+    }
+    # Calculamos la estela de los eventos, la lista de semanas con eventos 
+    # corresponde a la variable effect_weeks, por cada valor en este arreglo
+    # se calcula su estela. La suma de la estela de todos los eventos 
+    # corresponde a la salida de la función.
+    rowSums(sapply(effect_weeks, estela, total_weeks = total_weeks, 
+                   latency = latency, drag = drag))
     
-    coeficiente['interaccion',]
-  }
-
-  resultados_por_dia <- sapply(as.list(unique(casos$Fecha)), reg_por_dia)
-  save(resultados_por_dia, file= 'data/interim/resultados_dia.RData')
-} else {
-  load('data/interim/resultados_dia.RData')
-}
-
-# Convertimos resultados a df y agregamos variables de día y semana
-resultados_por_dia <- as.data.frame(t(resultados_por_dia)) %>% 
-  mutate(Fecha = unique(casos$Fecha)) %>% 
-  relocate(Fecha)
-
-if (russian_por_semana) {
-  reg_por_semana <- function(sem){
-    coeficiente <- casos %>% 
-      mutate(tratamiento = semana == sem,
-             interaccion = share_Russian * tratamiento) %>% 
-      lm(formula = tasa_confirmados ~ interaccion + factor(semana) + factor(ut)) %>% 
-      coeftest(., vcov. = vcov(., type = "HC0"))
-    
-    coeficiente['interaccion',]
   }
   
-  resultados_por_semana <- sapply(as.list(unique(casos$semana)), reg_por_semana)
-  save(resultados_por_semana, file= 'data/interim/resultados_semana.RData')
-} else {
-  load('data/interim/resultados_semana.RData')
+  # La variable acumulado tiene nueve variables, una para las semanas que comprende
+  # la ventana de observación y ocho para las distintas versiones del efecto 
+  # acumulado derivado de los eventos
+  acumulado <- acumulado %>% 
+    mutate(efecto_1 = efecto(semanasConEventos, acumulado$semana, latency = 0, drag = 1),
+           efecto_2 = efecto(semanasConEventos, acumulado$semana, latency = 0, drag = 2),
+           efecto_3 = efecto(semanasConEventos, acumulado$semana, latency = 0, drag = 3),
+           efecto_4 = efecto(semanasConEventos, acumulado$semana, latency = 0, drag = 4),
+           efecto_5 = efecto(semanasConEventos, acumulado$semana, latency = 1, drag = 1),
+           efecto_6 = efecto(semanasConEventos, acumulado$semana, latency = 1, drag = 2),
+           efecto_7 = efecto(semanasConEventos, acumulado$semana, latency = 1, drag = 3),
+           efecto_8 = efecto(semanasConEventos, acumulado$semana, latency = 1, drag = 4))
+  
+  # Agregamos variable de efecto (en sus 8 versiones) a la base de datos de casos
+  casos <- left_join(casos, acumulado, by = "semana")
+  
+  estimacion <- c()
+  
+  #     1. Latency = 0, Drag = 1
+  coeficiente <- casos %>%
+    mutate(interaccion = share_Russian * efecto_1) %>%
+    lm(formula = tasa_confirmados ~ interaccion + factor(semana) + factor(ut)) %>%
+    coeftest(., vcov. = vcov(., type = "HC0"))
+  estimacion <- rbind(estimacion, coeficiente['interaccion',])
+
+  #     2. Latency = 0, Drag = 2
+  coeficiente <- casos %>%
+    mutate(interaccion = share_Russian * efecto_2) %>%
+    lm(formula = tasa_confirmados ~ interaccion + factor(semana) + factor(ut)) %>%
+    coeftest(., vcov. = vcov(., type = "HC0"))
+  estimacion <- rbind(estimacion, coeficiente['interaccion',])
+  
+  #     3. Latency = 0, Drag = 3
+  coeficiente <- casos %>%
+    mutate(interaccion = share_Russian * efecto_3) %>%
+    lm(formula = tasa_confirmados ~ interaccion + factor(semana) + factor(ut)) %>%
+    coeftest(., vcov. = vcov(., type = "HC0"))
+  estimacion <- rbind(estimacion, coeficiente['interaccion',])
+  
+  #     4. Latency = 0, Drag = 4
+  coeficiente <- casos %>%
+    mutate(interaccion = share_Russian * efecto_4) %>%
+    lm(formula = tasa_confirmados ~ interaccion + factor(semana) + factor(ut)) %>%
+    coeftest(., vcov. = vcov(., type = "HC0"))
+  estimacion <- rbind(estimacion, coeficiente['interaccion',])
+  
+  #     5. Latency = 1, Drag = 1
+  coeficiente <- casos %>%
+    mutate(interaccion = share_Russian * efecto_5) %>%
+    lm(formula = tasa_confirmados ~ interaccion + factor(semana) + factor(ut)) %>%
+    coeftest(., vcov. = vcov(., type = "HC0"))
+  estimacion <- rbind(estimacion, coeficiente['interaccion',])
+  
+  #     6. Latency = 1, Drag = 2
+  coeficiente <- casos %>%
+    mutate(interaccion = share_Russian * efecto_6) %>%
+    lm(formula = tasa_confirmados ~ interaccion + factor(semana) + factor(ut)) %>%
+    coeftest(., vcov. = vcov(., type = "HC0"))
+  estimacion <- rbind(estimacion, coeficiente['interaccion',])
+  
+  #     7. Latency = 1, Drag = 3
+  coeficiente <- casos %>%
+    mutate(interaccion = share_Russian * efecto_7) %>%
+    lm(formula = tasa_confirmados ~ interaccion + factor(semana) + factor(ut)) %>%
+    coeftest(., vcov. = vcov(., type = "HC0"))
+  estimacion <- rbind(estimacion, coeficiente['interaccion',])
+  
+  #     8. Latency = 1, Drag = 4
+  coeficiente <- casos %>%
+    mutate(interaccion = share_Russian * efecto_8) %>%
+    lm(formula = tasa_confirmados ~ interaccion + factor(semana) + factor(ut)) %>%
+    coeftest(., vcov. = vcov(., type = "HC0"))
+  estimacion <- rbind(estimacion, coeficiente['interaccion',])
+  
+
+  leads_n_lags <- c()
+  
+  #     1. Latency = 0, Drag = 1
+  coeficiente <- casos %>%
+    mutate(interaccion = share_Russian * efecto_1) %>%
+    mutate(lead_1 = lead(interaccion, 1),
+           lead_2 = lead(interaccion, 2),
+           lead_3 = lead(interaccion, 3),
+           lag_1  = lag (interaccion, 1),
+           lag_2  = lag (interaccion, 2),
+           lag_3  = lag (interaccion, 3)) %>% 
+    lm(formula = tasa_confirmados ~ interaccion + lead_1 + lead_2 + lead_3 + 
+         lag_1 + lag_2 + lag_3 + factor(semana) + factor(ut)) %>%
+    coeftest(., vcov. = vcov(., type = "HC0"))
+  leads_n_lags <- rbind(leads_n_lags, 
+                        coeficiente[c('interaccion', 'lead_1', 'lead_2', 'lead_3', 
+                                      'lag_1', 'lag_2', 'lag_3'),])
+  
+  #     2. Latency = 0, Drag = 2
+  coeficiente <- casos %>%
+    mutate(interaccion = share_Russian * efecto_2) %>%
+    mutate(lead_1 = lead(interaccion, 1),
+           lead_2 = lead(interaccion, 2),
+           lead_3 = lead(interaccion, 3),
+           lag_1  = lag (interaccion, 1),
+           lag_2  = lag (interaccion, 2),
+           lag_3  = lag (interaccion, 3)) %>% 
+    lm(formula = tasa_confirmados ~ interaccion + lead_1 + lead_2 + lead_3 + 
+         lag_1 + lag_2 + lag_3 + factor(semana) + factor(ut)) %>%
+    coeftest(., vcov. = vcov(., type = "HC0"))
+  leads_n_lags <- rbind(leads_n_lags, 
+                        coeficiente[c('interaccion', 'lead_1', 'lead_2', 'lead_3', 
+                                      'lag_1', 'lag_2', 'lag_3'),])
+  
+  #     3. Latency = 0, Drag = 3
+  coeficiente <- casos %>%
+    mutate(interaccion = share_Russian * efecto_3) %>%
+    mutate(lead_1 = lead(interaccion, 1),
+           lead_2 = lead(interaccion, 2),
+           lead_3 = lead(interaccion, 3),
+           lag_1  = lag (interaccion, 1),
+           lag_2  = lag (interaccion, 2),
+           lag_3  = lag (interaccion, 3)) %>% 
+    lm(formula = tasa_confirmados ~ interaccion + lead_1 + lead_2 + lead_3 + 
+         lag_1 + lag_2 + lag_3 + factor(semana) + factor(ut)) %>%
+    coeftest(., vcov. = vcov(., type = "HC0"))
+  leads_n_lags <- rbind(leads_n_lags, 
+                        coeficiente[c('interaccion', 'lead_1', 'lead_2', 'lead_3', 
+                                      'lag_1', 'lag_2', 'lag_3'),])
+  
+  #     4. Latency = 0, Drag = 4
+  coeficiente <- casos %>%
+    mutate(interaccion = share_Russian * efecto_4) %>%
+    mutate(lead_1 = lead(interaccion, 1),
+           lead_2 = lead(interaccion, 2),
+           lead_3 = lead(interaccion, 3),
+           lag_1  = lag (interaccion, 1),
+           lag_2  = lag (interaccion, 2),
+           lag_3  = lag (interaccion, 3)) %>% 
+    lm(formula = tasa_confirmados ~ interaccion + lead_1 + lead_2 + lead_3 + 
+         lag_1 + lag_2 + lag_3 + factor(semana) + factor(ut)) %>%
+    coeftest(., vcov. = vcov(., type = "HC0"))
+  leads_n_lags <- rbind(leads_n_lags, 
+                        coeficiente[c('interaccion', 'lead_1', 'lead_2', 'lead_3', 
+                                      'lag_1', 'lag_2', 'lag_3'),])
+  
+  #     5. Latency = 1, Drag = 1
+  coeficiente <- casos %>%
+    mutate(interaccion = share_Russian * efecto_5) %>%
+    mutate(lead_1 = lead(interaccion, 1),
+           lead_2 = lead(interaccion, 2),
+           lead_3 = lead(interaccion, 3),
+           lag_1  = lag (interaccion, 1),
+           lag_2  = lag (interaccion, 2),
+           lag_3  = lag (interaccion, 3)) %>% 
+    lm(formula = tasa_confirmados ~ interaccion + lead_1 + lead_2 + lead_3 + 
+         lag_1 + lag_2 + lag_3 + factor(semana) + factor(ut)) %>%
+    coeftest(., vcov. = vcov(., type = "HC0"))
+  leads_n_lags <- rbind(leads_n_lags, 
+                        coeficiente[c('interaccion', 'lead_1', 'lead_2', 'lead_3', 
+                                      'lag_1', 'lag_2', 'lag_3'),])
+  
+  #     6. Latency = 1, Drag = 2
+  coeficiente <- casos %>%
+    mutate(interaccion = share_Russian * efecto_6) %>%
+    mutate(lead_1 = lead(interaccion, 1),
+           lead_2 = lead(interaccion, 2),
+           lead_3 = lead(interaccion, 3),
+           lag_1  = lag (interaccion, 1),
+           lag_2  = lag (interaccion, 2),
+           lag_3  = lag (interaccion, 3)) %>% 
+    lm(formula = tasa_confirmados ~ interaccion + lead_1 + lead_2 + lead_3 + 
+         lag_1 + lag_2 + lag_3 + factor(semana) + factor(ut)) %>%
+    coeftest(., vcov. = vcov(., type = "HC0"))
+  leads_n_lags <- rbind(leads_n_lags, 
+                        coeficiente[c('interaccion', 'lead_1', 'lead_2', 'lead_3', 
+                                      'lag_1', 'lag_2', 'lag_3'),])
+  
+  #     7. Latency = 1, Drag = 3
+  coeficiente <- casos %>%
+    mutate(interaccion = share_Russian * efecto_7) %>%
+    mutate(lead_1 = lead(interaccion, 1),
+           lead_2 = lead(interaccion, 2),
+           lead_3 = lead(interaccion, 3),
+           lag_1  = lag (interaccion, 1),
+           lag_2  = lag (interaccion, 2),
+           lag_3  = lag (interaccion, 3)) %>% 
+    lm(formula = tasa_confirmados ~ interaccion + lead_1 + lead_2 + lead_3 + 
+         lag_1 + lag_2 + lag_3 + factor(semana) + factor(ut)) %>%
+    coeftest(., vcov. = vcov(., type = "HC0"))
+  leads_n_lags <- rbind(leads_n_lags, 
+                        coeficiente[c('interaccion', 'lead_1', 'lead_2', 'lead_3', 
+                                      'lag_1', 'lag_2', 'lag_3'),])
+  
+  #     8. Latency = 1, Drag = 4
+  coeficiente <- casos %>%
+    mutate(interaccion = share_Russian * efecto_8) %>%
+    mutate(lead_1 = lead(interaccion, 1),
+           lead_2 = lead(interaccion, 2),
+           lead_3 = lead(interaccion, 3),
+           lag_1  = lag (interaccion, 1),
+           lag_2  = lag (interaccion, 2),
+           lag_3  = lag (interaccion, 3)) %>% 
+    lm(formula = tasa_confirmados ~ interaccion + lead_1 + lead_2 + lead_3 + 
+         lag_1 + lag_2 + lag_3 + factor(semana) + factor(ut)) %>%
+    coeftest(., vcov. = vcov(., type = "HC0"))
+  leads_n_lags <- rbind(leads_n_lags, 
+                        coeficiente[c('interaccion', 'lead_1', 'lead_2', 'lead_3', 
+                                      'lag_1', 'lag_2', 'lag_3'),])
+
+  save(estimacion, leads_n_lags, file= 'data/interim/efecto_acumulado.RData')
 }
-
-# Convertimos resultados a df y agregamos variables de día y semana
-resultados_por_semana <- as.data.frame(t(resultados_por_semana)) %>% 
-  mutate(semana = unique(casos$semana)) %>% 
-  relocate(semana)
-
-#####
-# Belarussian
-if (belarussian_por_semana) {
-  reg_por_semana <- function(sem){
-    coeficiente <- casos %>%
-      mutate(tratamiento = semana == sem,
-             interaccion = share_Belarusian * tratamiento) %>%
-      lm(formula = tasa_confirmados ~ interaccion + factor(semana) + factor(ut)) %>%
-      coeftest(., vcov. = vcov(., type = "HC0"))
-
-    coeficiente['interaccion',]
-  }
-
-  belarussian_por_semana <- sapply(as.list(unique(casos$semana)), reg_por_semana)
-  save(belarussian_por_semana, file= 'data/interim/belarussian_semana.RData')
-
-} else {
-  load('data/interim/belarussian_semana.RData')
-}
-
-belarussian_por_semana <- as.data.frame(t(belarussian_por_semana)) %>%
-  mutate(semana = unique(casos$semana)) %>%
-  relocate(semana)
-
-if (belarussian_por_dia) {
-  reg_por_dia <- function(dia){
-    coeficiente <- casos %>% 
-      mutate(tratamiento = Fecha == dia,
-             interaccion = share_Belarusian * tratamiento) %>% 
-      lm(formula = tasa_confirmados ~ interaccion + factor(Fecha) + factor(ut)) %>% 
-      coeftest(., vcov. = vcov(., type = "HC0"))
-    
-    coeficiente['interaccion',]
-  }
-  
-  belarussian_por_dia <- sapply(as.list(unique(casos$Fecha)), reg_por_dia)
-  save(belarussian_por_dia, file= 'data/interim/belarussian_dia.RData')
-} else {
-  load('data/interim/belarussian_dia.RData')
-}
-
-belarussian_por_dia <- as.data.frame(t(belarussian_por_dia)) %>%
-  mutate(Fecha = unique(casos$Fecha)) %>% 
-  relocate(Fecha)
-
-#####
-# Latvian
-if (latvian_por_semana) {
-  reg_por_semana <- function(sem){
-    coeficiente <- casos %>%
-      mutate(tratamiento = semana == sem,
-             interaccion = share_Latvian * tratamiento) %>%
-      lm(formula = tasa_confirmados ~ interaccion + factor(semana) + factor(ut)) %>%
-      coeftest(., vcov. = vcov(., type = "HC0"))
-    
-    coeficiente['interaccion',]
-  }
-  
-  latvian_por_semana <- sapply(as.list(unique(casos$semana)), reg_por_semana)
-  save(latvian_por_semana, file= 'data/interim/latvian_semana.RData')
-  
-} else {
-  load('data/interim/latvian_semana.RData')
-}
-
-latvian_por_semana <- as.data.frame(t(latvian_por_semana)) %>%
-  mutate(semana = unique(casos$semana)) %>%
-  relocate(semana)
-
-if (latvian_por_dia) {
-  reg_por_dia <- function(dia){
-    coeficiente <- casos %>% 
-      mutate(tratamiento = Fecha == dia,
-             interaccion = share_Latvian * tratamiento) %>% 
-      lm(formula = tasa_confirmados ~ interaccion + factor(Fecha) + factor(ut)) %>% 
-      coeftest(., vcov. = vcov(., type = "HC0"))
-    
-    coeficiente['interaccion',]
-  }
-  
-  latvian_por_dia <- sapply(as.list(unique(casos$Fecha)), reg_por_dia)
-  save(latvian_por_dia, file= 'data/interim/latvian_dia.RData')
-} else {
-  load('data/interim/latvian_dia.RData')
-}
-
-latvian_por_dia <- as.data.frame(t(latvian_por_dia)) %>%
-  mutate(Fecha = unique(casos$Fecha)) %>% 
-  relocate(Fecha)
-
-
-#####
-# Ukranian
-if (ukranian_por_semana) {
-  reg_por_semana <- function(sem){
-    coeficiente <- casos %>%
-      mutate(tratamiento = semana == sem,
-             interaccion = share_Ukrainian * tratamiento) %>%
-      lm(formula = tasa_confirmados ~ interaccion + factor(semana) + factor(ut)) %>%
-      coeftest(., vcov. = vcov(., type = "HC0"))
-    
-    coeficiente['interaccion',]
-  }
-  
-  ukranian_por_semana <- sapply(as.list(unique(casos$semana)), reg_por_semana)
-  save(ukranian_por_semana, file= 'data/interim/ukranian_semana.RData')
-  
-} else {
-  load('data/interim/ukranian_semana.RData')
-}
-
-ukranian_por_semana <- as.data.frame(t(ukranian_por_semana)) %>%
-  mutate(semana = unique(casos$semana)) %>%
-  relocate(semana)
-  
-if (ukranian_por_dia) {
-  reg_por_dia <- function(dia){
-    coeficiente <- casos %>% 
-      mutate(tratamiento = Fecha == dia,
-             interaccion = share_Ukrainian * tratamiento) %>% 
-      lm(formula = tasa_confirmados ~ interaccion + factor(Fecha) + factor(ut)) %>% 
-      coeftest(., vcov. = vcov(., type = "HC0"))
-    
-    coeficiente['interaccion',]
-  }
-  
-  ukranian_por_dia <- sapply(as.list(unique(casos$Fecha)), reg_por_dia)
-  save(ukranian_por_dia, file= 'data/interim/ukranian_dia.RData')
-} else {
-  load('data/interim/ukranian_dia.RData')
-}
-
-ukranian_por_dia <- as.data.frame(t(ukranian_por_dia)) %>%
-  mutate(Fecha = unique(casos$Fecha)) %>% 
-  relocate(Fecha)
+rm(precarga)
 
 
 
-#####
-# Polish
-if (polish_por_semana) {
-  reg_por_semana <- function(sem){
-    coeficiente <- casos %>%
-      mutate(tratamiento = semana == sem,
-             interaccion = share_Polish * tratamiento) %>%
-      lm(formula = tasa_confirmados ~ interaccion + factor(semana) + factor(ut)) %>%
-      coeftest(., vcov. = vcov(., type = "HC0"))
-    
-    coeficiente['interaccion',]
-  }
-  
-  polish_por_semana <- sapply(as.list(unique(casos$semana)), reg_por_semana)
-  save(polish_por_semana, file= 'data/interim/polish_semana.RData')
-  
-} else {
-  load('data/interim/polish_semana.RData')
-}
-
-polish_por_semana <- as.data.frame(t(polish_por_semana)) %>%
-  mutate(semana = unique(casos$semana)) %>%
-  relocate(semana)
-
-if (polish_por_dia) {
-  reg_por_dia <- function(dia){
-    coeficiente <- casos %>% 
-      mutate(tratamiento = Fecha == dia,
-             interaccion = share_Polish * tratamiento) %>% 
-      lm(formula = tasa_confirmados ~ interaccion + factor(Fecha) + factor(ut)) %>% 
-      coeftest(., vcov. = vcov(., type = "HC0"))
-    
-    coeficiente['interaccion',]
-  }
-  
-  polish_por_dia <- sapply(as.list(unique(casos$Fecha)), reg_por_dia)
-  save(polish_por_dia, file= 'data/interim/polish_dia.RData')
-} else {
-  load('data/interim/polish_dia.RData')
-}
-
-polish_por_dia <- as.data.frame(t(polish_por_dia)) %>%
-  mutate(Fecha = unique(casos$Fecha)) %>% 
-  relocate(Fecha)
-
-
-
-#####
-# Lithuanian
-if (lithuanian_por_semana) {
-  reg_por_semana <- function(sem){
-    coeficiente <- casos %>%
-      mutate(tratamiento = semana == sem,
-             interaccion = share_Lithuanian * tratamiento) %>%
-      lm(formula = tasa_confirmados ~ interaccion + factor(semana) + factor(ut)) %>%
-      coeftest(., vcov. = vcov(., type = "HC0"))
-    
-    coeficiente['interaccion',]
-  }
-  
-  lithuanian_por_semana <- sapply(as.list(unique(casos$semana)), reg_por_semana)
-  save(lithuanian_por_semana, file= 'data/interim/lithuanian_semana.RData')
-  
-} else {
-  load('data/interim/lithuanian_semana.RData')
-}
-
-lithuanian_por_semana <- as.data.frame(t(lithuanian_por_semana)) %>%
-  mutate(semana = unique(casos$semana)) %>%
-  relocate(semana)
-
-if (lithuanian_por_dia) {
-  reg_por_dia <- function(dia){
-    coeficiente <- casos %>% 
-      mutate(tratamiento = Fecha == dia,
-             interaccion = share_Lithuanian * tratamiento) %>% 
-      lm(formula = tasa_confirmados ~ interaccion + factor(Fecha) + factor(ut)) %>% 
-      coeftest(., vcov. = vcov(., type = "HC0"))
-    
-    coeficiente['interaccion',]
-  }
-  
-  lithuanian_por_dia <- sapply(as.list(unique(casos$Fecha)), reg_por_dia)
-  save(lithuanian_por_dia, file= 'data/interim/lithuanian_dia.RData')
-} else {
-  load('data/interim/lithuanian_dia.RData')
-}
-
-lithuanian_por_dia <- as.data.frame(t(lithuanian_por_dia)) %>%
-  mutate(Fecha = unique(casos$Fecha)) %>% 
-  relocate(Fecha)
-
-
-
-#####
-# Other
-if (other_por_semana) {
-  reg_por_semana <- function(sem){
-    coeficiente <- casos %>%
-      mutate(tratamiento = semana == sem,
-             interaccion = share_Other * tratamiento) %>%
-      lm(formula = tasa_confirmados ~ interaccion + factor(semana) + factor(ut)) %>%
-      coeftest(., vcov. = vcov(., type = "HC0"))
-    
-    coeficiente['interaccion',]
-  }
-  
-  other_por_semana <- sapply(as.list(unique(casos$semana)), reg_por_semana)
-  save(other_por_semana, file= 'data/interim/other_semana.RData')
-  
-} else {
-  load('data/interim/other_semana.RData')
-}
-
-other_por_semana <- as.data.frame(t(other_por_semana)) %>%
-  mutate(semana = unique(casos$semana)) %>%
-  relocate(semana)
-
-if (other_por_dia) {
-  reg_por_dia <- function(dia){
-    coeficiente <- casos %>% 
-      mutate(tratamiento = Fecha == dia,
-             interaccion = share_Other * tratamiento) %>% 
-      lm(formula = tasa_confirmados ~ interaccion + factor(Fecha) + factor(ut)) %>% 
-      coeftest(., vcov. = vcov(., type = "HC0"))
-    
-    coeficiente['interaccion',]
-  }
-  
-  other_por_dia <- sapply(as.list(unique(casos$Fecha)), reg_por_dia)
-  save(other_por_dia, file= 'data/interim/other_dia.RData')
-} else {
-  load('data/interim/other_dia.RData')
-}
-
-other_por_dia <- as.data.frame(t(other_por_dia)) %>%
-  mutate(Fecha = unique(casos$Fecha)) %>% 
-  relocate(Fecha)
-
-#####
-# Non Latvian
-
-if (non_latvian_por_semana) {
-  reg_por_semana <- function(sem){
-    coeficiente <- casos %>%
-      mutate(tratamiento = semana == sem,
-             interaccion = (1-share_Latvian) * tratamiento) %>%
-      lm(formula = tasa_confirmados ~ interaccion + factor(semana) + factor(ut)) %>%
-      coeftest(., vcov. = vcov(., type = "HC0"))
-    
-    coeficiente['interaccion',]
-  }
-  
-  non_latvian_por_semana <- sapply(as.list(unique(casos$semana)), reg_por_semana)
-  save(non_latvian_por_semana, file= 'data/interim/non_latvian_semana.RData')
-  
-} else {
-  load('data/interim/non_latvian_semana.RData')
-}
-
-non_latvian_por_semana <- as.data.frame(t(non_latvian_por_semana)) %>%
-  mutate(semana = unique(casos$semana)) %>%
-  relocate(semana)
-
-if (non_latvian_por_dia) {
-  reg_por_dia <- function(dia){
-    coeficiente <- casos %>% 
-      mutate(tratamiento = Fecha == dia,
-             interaccion = (1-share_Latvian) * tratamiento) %>% 
-      lm(formula = tasa_confirmados ~ interaccion + factor(Fecha) + factor(ut)) %>% 
-      coeftest(., vcov. = vcov(., type = "HC0"))
-    
-    coeficiente['interaccion',]
-  }
-  
-  non_latvian_por_dia <- sapply(as.list(unique(casos$Fecha)), reg_por_dia)
-  save(non_latvian_por_dia, file= 'data/interim/non_latvian_dia.RData')
-} else {
-  load('data/interim/non_latvian_dia.RData')
-}
-
-non_latvian_por_dia <- as.data.frame(t(non_latvian_por_dia)) %>%
-  mutate(Fecha = unique(casos$Fecha)) %>% 
-  relocate(Fecha)
-
-#####
-# Baltic & Non Baltic
-
-if (baltic_por_semana) {
-  reg_por_semana <- function(sem){
-    coeficiente <- casos %>%
-      mutate(tratamiento = semana == sem,
-             interaccion = (share_Latvian+share_Lithuanian) * tratamiento) %>%
-      lm(formula = tasa_confirmados ~ interaccion + factor(semana) + factor(ut)) %>%
-      coeftest(., vcov. = vcov(., type = "HC0"))
-    
-    coeficiente['interaccion',]
-  }
-  
-  baltic_por_semana <- sapply(as.list(unique(casos$semana)), reg_por_semana)
-  save(baltic_por_semana, file= 'data/interim/baltic_semana.RData')
-  
-} else {
-  load('data/interim/baltic_semana.RData')
-}
-
-baltic_por_semana <- as.data.frame(t(baltic_por_semana)) %>%
-  mutate(semana = unique(casos$semana)) %>%
-  relocate(semana)
-
-
-
-if (non_baltic_por_semana) {
-  reg_por_semana <- function(sem){
-    coeficiente <- casos %>%
-      mutate(tratamiento = semana == sem,
-             interaccion = (1-share_Latvian-share_Lithuanian) * tratamiento) %>%
-      lm(formula = tasa_confirmados ~ interaccion + factor(semana) + factor(ut)) %>%
-      coeftest(., vcov. = vcov(., type = "HC0"))
-    
-    coeficiente['interaccion',]
-  }
-  
-  non_baltic_por_semana <- sapply(as.list(unique(casos$semana)), reg_por_semana)
-  save(non_baltic_por_semana, file= 'data/interim/non_baltic_semana.RData')
-  
-} else {
-  load('data/interim/non_baltic_semana.RData')
-}
-
-non_baltic_por_semana <- as.data.frame(t(non_baltic_por_semana)) %>%
-  mutate(semana = unique(casos$semana)) %>%
-  relocate(semana)
 
 

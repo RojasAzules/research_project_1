@@ -1,0 +1,660 @@
+---
+title: "El efecto de desinformación Rusa en el número de casos de Covid-19 en Letonia"
+author: "David Rojas"
+date: "9/8/2021"
+output:
+  pdf_document: default
+  extra_dependencies:
+    hyperref:
+    - unicode = true
+    - breaklinks = true
+    babel: spanish    
+---
+\fontsize{11}{18}
+\selectfont
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      message = FALSE,
+                      warning = FALSE,
+                      fig.width = 6,
+                      fig.height = 4, 
+                      fig.align = 'center')
+```
+
+```{r generarBases}
+# Cargar datos
+source('./src/calculos_con_controles.R')
+source('./src/prueba_robustes.R')
+source('./src/week_to_week.R')
+```
+
+
+# Introducción
+
+La pandemia Covid-19 ha provocado una coyuntura en temas de salud, económicos, políticos y de organización social al interior de todos los países del mundo.\footnote{World Health Organization, Coronavirus 2020, https://www.who.int/health-topics/coronavirus} Por si fuera poco, la propagación de la pandemia trajo consigo un aumento en el ruido informativo, las noticias falsas y las teorías conspiranoicas tanto en los medios convencionales como en las redes sociales (Barnes, 2020). En estas circunstancias, las vulnerabilidades de algunas democracias han sido explotadas por potencias revisionistas como China y Rusia que buscan aumentar su nivel de influencia internacional; la Federación Rusa ha diseminado olas de desinformación a través de artículos en medios de comunicación que apoyan la política del Kremlin en Estonia, Letonia y Lituania durante la propagación del Covid-19 (Mölder, 2020).
+
+El bajo costo de acceso, la viralidad de las publicaciones, la confianza de las personas en su red social, así como el alto costo de la verificación de los datos, hacen que las redes sociales sean suceptibles a la desinformación (Del Vicario, 2016). Esto es de especial relevancia pues la exposición a *fake news* puede, por ejemplo, tener efectos significativos en el comportamiento electoral tanto a la derecha (DellaVigna, 2007) como a la izquierda (Durante, 2012). En contraste, el acceso a información de fuentes confiables puede tener efectos sustanciales en el conocimiento y el comportamiento socialmente deseable en el contexto de pandemias como la del Covid-19 (Larreguy, 2020).
+
+En su resolución del 23 de noviembre de 2016, el parlamento europeo reconoce que "el gobierno ruso está empleando una amplia gama de herramientas e instrumentos, como [\ldots] estaciones de televisión multilingües (e.g. RT), agencias de pseudo noticias y servicios multimedia (e.g. Sputnik), [\ldots], redes sociales y trolls de Internet para crear la percepción de estados fallidos en la vecindad oriental de la UE", (Parlamento europeo 16). Durante el desarrollo de la pandemia Covid-19 se ha presentado una ola de *fake news* cuyas principales narrativas de desinformación alegan una ola de rusofobia inducida por la pandemia en los Estados bálticos (Debunkeu 1, 2020) que busca menoscabar la confianza pública en las instituciones gubernamentales de Letonia, Lituania y Estonia.
+
+Este artículo presenta una estrategia para calcular el posible efecto que han tenido las olas de desinformación en lengua rusa en la tasa de aparición de nuevos casos de Covid-19 en Letonia para las localidades con mayor presencia de hablantes de ruso. Se usa como supuesto que las olas de desinformación generan un efecto de desconfianza en el Estado, lo que generaría un comportamiento diferenciado del de los hablantes de letón.
+
+La estructura del artículo es la siguiente. En el capítulo X se presenta el contexto social letón durante el desarrollo de la pandemia. En el capítulo X se describen los datos utilizados. En el capítulo X se describe la metodología. La sección X describe los resultados y las evaluación del modelo. La sección X concluye.
+
+
+# Antecedentes
+
+El contexto geopolítico y demográfico con el que Letonia entra a la pandemia Covid-19 es sumamente complejo. Con un pasado de república soviética, Letonia forma parte de la OTAN y la Unión Europea desde 2004. Posterior a la desintegración de la Unión Soviética, en Lituania se tuvo un proceso de integración de la población rusófona acelerado y comprometido; esto marca un contraste con Letonia, donde el proceso ha sido más complejo. Para empezar, una de cada cuatro personas proviene de una comunidad rusoparlante. Además, las personas que hablan ruso son más proclives a identificarse como rusas que como letonas. (Lord, 2021).
+
+La región de Latgale es densa en rusoparlantes. Es, además, una de las regiones con menor ingreso per cápita. El Partido de la Armonía (Saskara) es popular en esta y otras regiones con  importante presencia rusófila y su (ahora auto-censurada) afinidad con Rusia Unida, el partido de Vladimir Putín, no es menos que controversial. (Lord, 2021)
+
+Podría decirse que la población rusoparlante se encuentra agrupada geográficamente, marginada económicamente y unida políticamente en la protección de sus intereses (Kirch, 1992). Si acudimos a los datos del censo 2020 y consideramos por cada unidad territorial las variables que indican la proporción de hablantes por comunidad lingüística, podemos calcular su matriz de correlación considerando las unidades territoriales como observaciones. Al visualizar esta matriz, se puede observar que existe una marcada separación geográfica entre las comunidades de hablantes de letón y ruso. De igual manera, el resto de comunidades lingüísticas no bálticas se encuentra cerca de los ruso parlantes mientras que la comunidad de hablantes de lituano se encuentra cercana a la comunidad letona.
+
+```{r grafica_varianzas_covarianzas, fig.width = 4, fig.height = 3}
+demograficos %>% 
+  select(
+    share_Russian,
+    share_Other,
+    share_Polish,
+    share_Belarusian,
+    share_Ukrainian,
+    share_Lithuanian,
+    share_Latvian,
+    ) %>% 
+  rename(
+    'Hablantes rusos' = share_Russian,
+    'Hablantes otros' = share_Other,
+    'Hablantes polacos' = share_Polish,
+    'Hablantes bielorrusos' = share_Belarusian,
+    'Hablantes ucranianos' = share_Ukrainian,
+    'Hablantes lituanos' = share_Lithuanian,
+    'Hablantes letones' = share_Latvian,
+  ) %>% 
+  cor() %>% 
+  ggcorrplot(colors = c("#00A08A", "white", "#F2AD00"))
+  # network_plot(min_cor = 0.33, colours = c("#00A08A", "white", "#F2AD00"))
+  
+```
+
+
+En Letonia, una de cada cuatro personas tienen ascendencia rusa, pero además, de aquellas personas que hablan letón, nueve de cada diez comprende la lengua rusa. Es decir, "todos" en Letonia entienden ruso. Debido a que aprender letón es un requisito para la ciudadanía, aproximadamente trescientas mil personas, i.e. el 15% de la población que se encuentra en el territorio letón, permanece sin ciudadanía, por lo que no puede votar ni trabajar para el gobierno. (Chuang, 2021)
+
+En mayo de 2020 más de la mitad de eventos virales de desinformación sobre Covid-19 en internet en los países bálticos, ocurrieron en Letonia. Además, siete de cada diez fake news se diseminaron a través de Facebook (DebunkEU 1, 2020). Cabe mencionar que Letonia se adhiere plenamente al portafolio de vacunación de la Unión Europea, el cual es aprovado por la Agencia Europea de Medicamentos con sede en Ámsterdam. (DebunkEU 2, 2020)
+
+Letonia, junto los demás países Bálticos, se ha visto sumergida en una oleada de propaganda, principalmente en lengua rusa, que pretende generar un efecto de desconfianza y desinformación en el tema de las vacunas (dirigiendo las narrativas tanto a los preparados biológicos como a la capacidad del gobierno letón de administrar la emergencia sanitaria).
+
+## Sobre los efectos de la desinformación
+
+En la documentación de una campaña de desinformación que ocurrió en Paquistán en 2011, Martínez y Stegmann encuentran efectos negativos y significativos en los comportamientos de búsqueda de servicios de salud (y específicamente en las tasas de vacunación) en la población Pakistaní más expuesta una campaña de propaganda anti-vacunas dirigida a desacreditar tanto las vacunas como trabajadores de la salud después de que la CIA usara una campaña de vacunación como pantalla para capturar a Osaba Bin-Laden (Martínez, 2021).
+
+Las *fake news*, contenido totalmente fabricado y a menudo partidista que se presenta como fáctico, tienen una naturaleza conflictiva, por ejemplo, exposición repetida a *fake news* aumenta subsecuentemente la percepción de veracidad de la noticia al generar un "efecto de veracidad ilusoria" (Pennycock, 2018). Sin embargo, la susceptibilidad a creer *fake news* está basado más en flojera al pensar que en un sesgo partisano per se, es decir, el pensamiento analítico es la mejor receta contra la influencia de este tipo de contenido (Pennycook, 2019). A pesar de que se ha encontrado que el efecto de hacer revisión de datos y noticias (*fact-checking*) queda sustancialmente atenuado por las creencias y conocimietno preexistentes de las personas (Walter, 2019). La información relacionada a *fake news* tiende a formar comunidades homogéneas y polarizadas que siguen patrones similares de consumo de dicha información (Del Vicario, 2016).
+
+La difusión de desinformación en redes sociales es una causa significativa de la vacilación con respecto a las vacunas (Carrieri, 2019) y, en consecuencia, es una de las principales amenazas para la salud mundial de acuerdo con la Organización Mundial de la Salud. La exposición a las campañas de desinformación durante la pandemia Covid-19 pudo haber hecho a las personas más vulnerables de varias maneras: al desalentar acciones de protección contra el virus, al promover el uso de remedios falsos, al distorcionar los mecanismos de transmisión del virus o al menospreciar los riesgos que implica la pandemia (Hanson, 2020). 
+
+
+
+# Argumento, método y fuentes
+
+En las unidades territoriales donde la presencia de hablantes de lengua rusa es mayor, la desinformación que sus habitantes consumen podría afectar la aparición de nuevos casos de Covid-19 en caso de que las personas eligieran diferenciar su comportamiento del de otras unidades territoriales con otra composición lingüística. 
+
+Se puede presentar un efecto diferenciado en la tasa de aparición de nuevos casos de Covid-19 en dichas unidades territoriales por alguna de las siguientes razones. Una mayor exposición a campañas anti-vacunas puede provocar una disminución en la confianza en las vacunas, lo que disminuye la tasa de vacunación. Una baja tasa de vacunación hace que la unidad territorial sea más sensible a la aparición de nuevos casos. Por otra parte, una mayor exposición a campañas de desinformación (aunado a una menor disponibilida de información oficial en lengua rusa) puede generar desconfianza en los servicios de salud. Personas con poca confianza en los servicios de salud podrían optar por no buscar tratamiento médico ante un caso de contagio, lo que puede incidir en la prevalencia de la enfermedad en estas unidades territoriales. Por último, una falta de acceso a información gubernamental de calidad en lengua rusa puede provocar una falta de coordinación en la estrategia de contención de la enfermedad.
+
+
+## Metodología
+
+Se identificaron $N$ eventos que generaron un posible efecto de desconfianza en el Estado. El evento $i$ tiene una semana de ocurrencia $t_i$. A partir de la ocurrencia del evento, la aparición del efecto tiene una latencia de $l$ semanas (latency) y una duración de $d$ semanas (duration). Podemos definir el efecto del evento $i$ en la semana $t$ de la siguiente manera.
+
+$$
+e_i(t) = 
+\begin{cases} 
+0 & \mbox{si } t < t_i + l\\
+1 & \mbox{si } t_i + l \leq t \leq t_i + l + d\\
+0 & \mbox{si } t_i + l + d < t
+\end{cases}
+$$
+
+El tratamiento $T_{m,t}$ de una unidad territorial $m$ durante la semana $t$ corresponde al nivel de exposición por el nivel de intensidad del efecto de desconfianza. El nivel de exposición corresponde a la proporción de hablantes de lengua rusa,  $rsp_m$. Es decir.
+
+$$
+T_{mt} = rsp_m \sum_{i=1}^{N}  e_i(t)
+$$
+
+Sea $y_{t,m}$ la tasa de nuevos casos por cada cien mil habitantes. Se propone el siguiente modelo de diferencias en diferencias.
+
+$$
+y_{mt} = \beta T_{mt} + \sum_{j=1}^J \gamma_{j} X_{jm} \sum_{i=1}^{N}  e_i(t) + \eta_m + \delta_t + \epsilon_{mt}
+$$
+
+Donde $\eta_m$ corresponde a efectos fijos por unidad territorial y $\delta_t$  por fecha, $\{X_{jm}\}$ corresponde a un conjunto de controles por unidad territorial. $\{X_{jm}\}_{j=1}^{J}$ corresponde a un conjunto de $J$ controles demográficos por unidad territorial.
+
+
+## Datos
+
+El número de nuevos casos de Covid-19 por unidad territorial se descargaron del Latvian Open Data Portal. La información del número de habitantes, y composición demográfica por unidad territorial corresponde a la del censo 2020 y se descargó del portal de estadísticas oficiales del Central Statistical Bureau (CSB) de Letonia.
+
+La base de eventos que generaron desconfianza en el estado se construyó principalmente a partir de los artículos publicados por una organización no gubernamental y think tank que investiga la desinformación, Debunk EU. Los artículos fueron publicados como seguimiento a las olas de desinformación en lengua rusa en los territorios bálticos, en específico en Letonia. Se complementó con consultas a sitios de noticias como EuroNews, Político, así como otras fuentes noticiosas y el portal de comunicación del gobierno letón. En el anexo se incluye la tabla de eventos que generaron desconfianza en el estado que fueron considerados.
+
+
+# Resultados
+
+Se estiman las regresiones considerando las ocho posibles combinaciones de cero o una semanas de latencia (es decir, $l=0$ o $l=1$) con una a cuatro semanas de duración del efecto ($d = 1, \ldots, 4$). En la siguiente tabla podemos observar que el efecto de los eventos que generan desconfianza en el Estado letón sobre la tasa de aparición de nuevos casos de Covid-19 con respecto a la proporción de rusoparlantes de una unidad territorial dada es significativo bajo todas las especificaciones de duración y latencia. 
+
+Sin embargo, el efecto más fuerte se observa considerando cero semanas de latencia, $l=0$ y duración del efecto de desconfianza en el Estado de una semana $d=1$. Considerando esta especificación, cuyo coeficiente corresponde a 38.91, esto sugiere que en una unidad territorial en la que la mitad de sus habitantes hablan ruso, los eventos seleccionados en este estudio tuvieron un efecto de 19.45 (la mitad de 38.91) casos de Covid-19 adicionales por cada 100 mil habitantes. Un aumento en la presencia de rusoparlantes, se traduce de manera significativa en un aumento en la aparición de nuevos casos de Covid-19.
+
+```{r tablaResultados}
+as.data.frame(estimacion_cc) %>% 
+  mutate(
+    modelo = rep(c(
+      'Latencia 0, Duración 1', 
+      'Latencia 0, Duración 2', 
+      'Latencia 0, Duración 3', 
+      'Latencia 0, Duración 4', 
+      'Latencia 1, Duración 1', 
+      'Latencia 1, Duración 2', 
+      'Latencia 1, Duración 3', 
+      'Latencia 1, Duración 4'), each = 12),
+    variable = rep(c(
+      'intercepto',
+      'efecto',
+      'share_russian',
+      'average_wage',
+      'average_age',
+      'average_schooling',
+      'women_share',
+      'rsp x T',
+      'wage x T',
+      'age x T',
+      'schooling x T',
+      'women x T'), 8)
+  ) %>% 
+  filter(variable == 'rsp x T') %>% 
+  select(-variable) %>% 
+  relocate(modelo) %>% 
+  rename(Modelo = modelo) %>% 
+  kbl(booktabs = TRUE,
+      digits = c(0, 2, 2, 2, 28), 
+      linesep = "", 
+      row.names = FALSE) %>% 
+  kable_styling(position = "center")
+
+```
+
+
+```{r tabla_modelo1}
+
+# precarga <- FALSE
+# 
+# if (precarga == TRUE) {
+#   load('data/interim/modelo_1.RData')
+# } else {
+#   acumulado <- casos %>% 
+#     select(semana) %>% 
+#     pull() %>% 
+#     unique() %>% 
+#     as.data.frame() %>% 
+#     rename('semana' = '.') %>% 
+#     filter(semana != 202053)
+# 
+#   semanasConEventos <- eventos %>% 
+#     filter(Consider == 1) %>% 
+#     select(Date) %>% 
+#     mutate(semana = year(Date)*100 + week(Date)) %>% 
+#     mutate(semana = replace(semana, semana == 202053, 202052)) %>% 
+#     select(semana) %>% 
+#     pull()
+#   
+#   efecto <- function(effect_weeks, total_weeks, latency, drag){
+#     # La "estela" es el periodo durante el cual el efecto un evento es observado,
+#     # comienza después del periodo de latencia (latency) y tiene una duración en
+#     # semanas (drag), 
+#     estela <- function(total_weeks, semana, latency, drag){
+#       estela <- rep(0, length(total_weeks))
+#       for (i in seq(drag)) {
+#         estela <- estela + shift(as.integer(total_weeks == semana),
+#                                  latency + i - 1)
+#       }
+#       estela
+#     }
+#     # Calculamos la estela de los eventos, la lista de semanas con eventos 
+#     # corresponde a la variable effect_weeks, por cada valor en este arreglo
+#     # se calcula su estela. La suma de la estela de todos los eventos 
+#     # corresponde a la salida de la función.
+#     rowSums(sapply(effect_weeks, estela, total_weeks = total_weeks, 
+#                    latency = latency, drag = drag))
+#     
+#   }
+#   
+#   # La variable acumulado tiene nueve variables, una para las semanas que comprende
+#   # la ventana de observación y ocho para las distintas versiones del efecto 
+#   # acumulado derivado de los eventos
+#   acumulado <- acumulado %>% 
+#     mutate(efecto_1 = efecto(semanasConEventos, acumulado$semana, latency = 0, drag = 1),
+#            efecto_2 = efecto(semanasConEventos, acumulado$semana, latency = 0, drag = 2),
+#            efecto_3 = efecto(semanasConEventos, acumulado$semana, latency = 0, drag = 3),
+#            efecto_4 = efecto(semanasConEventos, acumulado$semana, latency = 0, drag = 4),
+#            efecto_5 = efecto(semanasConEventos, acumulado$semana, latency = 1, drag = 1),
+#            efecto_6 = efecto(semanasConEventos, acumulado$semana, latency = 1, drag = 2),
+#            efecto_7 = efecto(semanasConEventos, acumulado$semana, latency = 1, drag = 3),
+#            efecto_8 = efecto(semanasConEventos, acumulado$semana, latency = 1, drag = 4))
+#   
+#   # Agregamos variable de efecto (en sus 8 versiones) a la base de datos de casos
+#   casos <- left_join(casos, acumulado, by = "semana")
+#   
+#   #     1. Latency = 0, Drag = 1
+#   modelo_1 <- casos %>%
+#     lm(formula = tasa_confirmados ~ 
+#          share_Russian * efecto_1 + 
+#          average_wage * efecto_1 + 
+#          average_age * efecto_1 + 
+#          average_schooling * efecto_1 + 
+#          women_share * efecto_1 + 
+#          factor(semana) + factor(ut)) %>%
+#     coeftest(., vcov. = vcov(., type = "HC0"))
+# 
+#     # estimacion <- rbind(estimacion, coeficiente[c('(Intercept)', 
+#   #                                               'efecto_1',
+#   #                                               'share_Russian',
+#   #                                               'average_wage',
+#   #                                               'average_age',
+#   #                                               'average_schooling',
+#   #                                               'women_share',
+#   #                                               'share_Russian:efecto_1',
+#   #                                               'efecto_1:average_wage',
+#   #                                               'efecto_1:average_age',
+#   #                                               'efecto_1:average_schooling',
+#   #                                               'efecto_1:women_share'), ])
+# 
+#   save(modelo_1, file = 'data/interim/modelo_1.RData')
+# }
+
+# stargazer(modelo_1, title = 'Efecto de los eventos que generan desconfianza con respecto a la proporción de población rusa', keep = c('(Intercept)', 'share_Russian:efecto_1', 'efecto_1:average_wage', 'efecto_1:average_age', 'efecto_1:average_schooling', 'efecto_1:women_share'))
+
+# style = 'aer', style = 'qje'
+
+```
+
+
+
+La tabla 1 muestra los resultados de la regresión con latencia cero ($l=0$) y duración 1 ($d=1$) y los controles demográficos seleccionados.
+
+\begin{table}[!htbp] \centering 
+  \caption{Modelo 1, latencia 0, duracion 1} 
+  \label{tabla:resultadosConControles} 
+\begin{tabular}{@{\extracolsep{5pt}}lc} 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+ & \multicolumn{1}{c}{\textit{Dependent variable:}} \\ 
+\cline{2-2} 
+\\[-1.8ex] &   \\ 
+\hline \\[-1.8ex] 
+ $T_{mt}$ & 38.909$^{***}$ \\ 
+  & (4.036) \\ 
+  & \\ 
+ Salario promedio $\times$ Efecto & 0.006$^{**}$ \\ 
+  & (0.003) \\ 
+  & \\ 
+ Edad promedio $\times$ Efecto & 0.610$^{**}$ \\ 
+  & (0.242) \\ 
+  & \\ 
+ Escolaridad promedio $\times$ Efecto & $-$44.318$^{**}$ \\ 
+  & (21.454) \\ 
+  & \\ 
+ Proporción de mujeres $\times$ Efecto & $-$60.708$^{**}$ \\ 
+  & (25.879) \\ 
+  & \\ 
+\hline \\[-1.8ex] 
+\hline 
+\hline \\[-1.8ex] 
+\textit{Note:}  & \multicolumn{1}{r}{$^{*}$p$<$0.1; $^{**}$p$<$0.05; $^{***}$p$<$0.01} \\ 
+\end{tabular} 
+\end{table} 
+
+## Leads and lags
+
+Se estimó la siguiente especificación para evaluar el supuesto de tendencias paralelas considerando $f = 3$ y $l = 3$.
+
+$$
+y_{mt} = \gamma_m + \delta_t + \tau T_{mt} + \sum_{t'=1}^{f} \delta_{t'} T_{mt+t'} + \sum_{t'=1}^{l} \delta_{-t'} T_{mt-t'} +  \sum_{j=1}^J \gamma_{j} X_{jm} \sum_{i=1}^{N}  e_i(t) + \epsilon_{mt}
+$$
+
+El efecto más claramente diferenciado se observa con la especificación que considera un efecto de cero semanas de latencia, y una semana de duración.
+
+```{r lead_n_lags_1}
+i <- 1
+# Tabla con coeficientes de leads n lags
+coeficientes <- leads_n_lags_cc[seq(7*(i-1)+1,7*(i-1)+7),]
+# Gráfica con los coeficientes
+as.data.frame(coeficientes[c(2, 3, 4, 1, 5, 6, 7),]) %>% 
+  mutate(t = c('t+3', 't+2', 't+1', 't', 't-1', 't-2', 't-3'),
+         t_ = c(-3, -2, -1, 0, 1, 2, 3)) %>% 
+  relocate(t) %>%
+  mutate( # Generamos variables Date e intervalos de confianza y significancia para los coeficientes
+    lower = Estimate - `Std. Error`*qnorm(1-0.05/2),
+    upper = Estimate + `Std. Error`*qnorm(1-0.05/2),
+    significancia = as.factor(case_when(
+      (0.05 < `Pr(>|t|)`                     ) ~ 'No',
+      (0.01 < `Pr(>|t|)` & `Pr(>|t|)` <= 0.05) ~ '5%',
+      (                    `Pr(>|t|)` <= 0.01) ~ '1%'))) %>% 
+  ggplot(aes(x = t_, y = Estimate, colour = significancia)) + 
+  geom_pointrange(aes(ymin = lower, ymax = upper)) + # Coeficientes semanales
+  ylab('New cases') + 
+  labs(title = 'Coefficients on leads and lags of distrust effect',
+       subtitle = 'Latency period of 0 weeks, duration of 1 week',
+       colour = 'Significance') +
+  theme(legend.position = "bottom") + 
+  scale_x_continuous('Presence of distrust effect',
+                   breaks = c(-3, -2, -1, 0, 1, 2, 3),
+                   label = c("t-3", "t-2", "t-1", "t", "t+1", "t+2", "t-3"))
+
+```
+
+Si bien pareciera haber un efecto significativo en el segundo lag, el efecto del tratamiento se encuentra claramente diferenciado del de los efectos lead y lag. Esto abona como evidencia a favor de nuestra especificación.
+
+## Prueba de robustés
+
+Es importante considerar que durante los meses de diciembre y enero, se vivió en Letonia y los demás territorios Bálticos un aumento importante en la aparición de nuevos casos. La población de habla rusa, al ser una población precarizada, podría sentir más los efectos de la pandemia por falta de acceso a recursos de salud. Varios de los eventos que se seleccionaron se encuentran durante este periodos. Se estima el mismo modelo sobre la tasa de apariciòn de nuevos casos por cada cien mil habitantes, $y_{mt} = \beta T_{mt} + \sum_{j=1}^J \gamma_{j} X_{jm} \sum_{i=1}^{N}  e_i(t) + \eta_m + \delta_t + \epsilon_{mt}$, sin embargo, se suprimen las observaciones de los meses de diciembre y enero de tres formas: se suprimen las observaciones sólo de diciembre, se suprimen las observaciones sólo de enero o se suprimen las observaciones de ambos meses.
+
+
+```{r tabla_robustes}
+as.data.frame(estimacion_sin_dic) %>% 
+  mutate(
+    modelo = rep(c(
+      'Sin diciembre', 
+      'Sin enero', 
+      'Sin diciembre ni enero'), each = 12),
+    variable = rep(c(
+      'intercepto',
+      'efecto',
+      'share_russian',
+      'average_wage',
+      'average_age',
+      'average_schooling',
+      'women_share',
+      'rsp x T',
+      'wage x T',
+      'age x T',
+      'schooling x T',
+      'women x T'), 3)
+  ) %>% 
+  filter(variable == 'rsp x T') %>% 
+  select(-variable) %>% 
+  relocate(modelo) %>% 
+  rename(Modelo = modelo) %>% 
+  kbl(booktabs = TRUE,
+      digits = c(0, 2, 2, 2, 28), 
+      linesep = "", 
+      row.names = FALSE) %>% 
+  kable_styling(position = "center")
+
+```
+
+Además, se estiman las gráficas leads y lags para estas especificaciones.
+
+```{r lead_n_lags_robustness, fig.show="hold", out.width="49%"}
+i <- 1
+# Tabla con coeficientes de leads n lags
+coeficientes <- leads_n_lags_sin_dic[seq(7*(i-1)+1,7*(i-1)+7),]
+# Gráfica con los coeficientes
+as.data.frame(coeficientes[c(2, 3, 4, 1, 5, 6, 7),]) %>% 
+  mutate(t = c('t+3', 't+2', 't+1', 't', 't-1', 't-2', 't-3'),
+         t_ = c(-3, -2, -1, 0, 1, 2, 3)) %>% 
+  relocate(t) %>%
+  mutate( # Generamos variables Date e intervalos de confianza y significancia para los coeficientes
+    lower = Estimate - `Std. Error`*qnorm(1-0.05/2),
+    upper = Estimate + `Std. Error`*qnorm(1-0.05/2),
+    significancia = as.factor(case_when(
+      (0.05 < `Pr(>|t|)`                     ) ~ 'No',
+      (0.01 < `Pr(>|t|)` & `Pr(>|t|)` <= 0.05) ~ '5%',
+      (                    `Pr(>|t|)` <= 0.01) ~ '1%'))) %>% 
+  ggplot(aes(x = t_, y = Estimate, colour = significancia)) + 
+  geom_pointrange(aes(ymin = lower, ymax = upper)) + # Coeficientes semanales
+  ylab('New cases') + 
+  labs(title = 'Leads and lags without December 2020',
+       subtitle = 'Latency period of 0 weeks, duration of 1 week',
+       colour = 'Significance') +
+  theme(legend.position = "bottom") + 
+  scale_x_continuous('Presence of distrust effect',
+                   breaks = c(-3, -2, -1, 0, 1, 2, 3),
+                   label = c("t-3", "t-2", "t-1", "t", "t+1", "t+2", "t-3"))
+
+
+i <- 2
+# Tabla con coeficientes de leads n lags
+coeficientes <- leads_n_lags_sin_dic[seq(7*(i-1)+1,7*(i-1)+7),]
+# Gráfica con los coeficientes
+as.data.frame(coeficientes[c(2, 3, 4, 1, 5, 6, 7),]) %>% 
+  mutate(t = c('t+3', 't+2', 't+1', 't', 't-1', 't-2', 't-3'),
+         t_ = c(-3, -2, -1, 0, 1, 2, 3)) %>% 
+  relocate(t) %>%
+  mutate( # Generamos variables Date e intervalos de confianza y significancia para los coeficientes
+    lower = Estimate - `Std. Error`*qnorm(1-0.05/2),
+    upper = Estimate + `Std. Error`*qnorm(1-0.05/2),
+    significancia = as.factor(case_when(
+      (0.05 < `Pr(>|t|)`                     ) ~ 'No',
+      (0.01 < `Pr(>|t|)` & `Pr(>|t|)` <= 0.05) ~ '5%',
+      (                    `Pr(>|t|)` <= 0.01) ~ '1%'))) %>% 
+  ggplot(aes(x = t_, y = Estimate, colour = significancia)) + 
+  geom_pointrange(aes(ymin = lower, ymax = upper)) + # Coeficientes semanales
+  ylab('New cases') + 
+  labs(title = 'Leads and lags without January 2021',
+       subtitle = 'Latency period of 0 weeks, duration of 1 week',
+       colour = 'Significance') +
+  theme(legend.position = "bottom") + 
+  scale_x_continuous('Presence of distrust effect',
+                   breaks = c(-3, -2, -1, 0, 1, 2, 3),
+                   label = c("t-3", "t-2", "t-1", "t", "t+1", "t+2", "t-3"))
+
+
+```
+
+```{r lead_n_lags_robustness2, fig.show="hold", out.width="49%"}
+i <- 3
+# Tabla con coeficientes de leads n lags
+coeficientes <- leads_n_lags_sin_dic[seq(7*(i-1)+1,7*(i-1)+7),]
+# Gráfica con los coeficientes
+as.data.frame(coeficientes[c(2, 3, 4, 1, 5, 6, 7),]) %>% 
+  mutate(t = c('t+3', 't+2', 't+1', 't', 't-1', 't-2', 't-3'),
+         t_ = c(-3, -2, -1, 0, 1, 2, 3)) %>% 
+  relocate(t) %>%
+  mutate( # Generamos variables Date e intervalos de confianza y significancia para los coeficientes
+    lower = Estimate - `Std. Error`*qnorm(1-0.05/2),
+    upper = Estimate + `Std. Error`*qnorm(1-0.05/2),
+    significancia = as.factor(case_when(
+      (0.05 < `Pr(>|t|)`                     ) ~ 'No',
+      (0.01 < `Pr(>|t|)` & `Pr(>|t|)` <= 0.05) ~ '5%',
+      (                    `Pr(>|t|)` <= 0.01) ~ '1%'))) %>% 
+  ggplot(aes(x = t_, y = Estimate, colour = significancia)) + 
+  geom_pointrange(aes(ymin = lower, ymax = upper)) + # Coeficientes semanales
+  ylab('New cases') + 
+  labs(title = 'Leads and lags without December 2020 and January 2021',
+       subtitle = 'Latency period of 0 weeks, duration of 1 week',
+       colour = 'Significance') +
+  theme(legend.position = "bottom") + 
+  scale_x_continuous('Presence of distrust effect',
+                   breaks = c(-3, -2, -1, 0, 1, 2, 3),
+                   label = c("t-3", "t-2", "t-1", "t", "t+1", "t+2", "t-3"))
+
+```
+
+Podemos ver que, sin considerar los meses del pico de la pandemia, el efecto diferenciado en las gráficas de leads and lags disminuye considerablemente, sin dejar de ser significativo.
+
+# Discusión
+
+Se encuentra evidencia no concluyente al respecto de los eventos seleccionados. La prueba de robustés no es tan favorable, pues la causalidad de una población precarizada en medio de una pandemia (que se ve afectada de especial manera) podría combinarse con la causalidad del efecto de los eventos seleccionados, cuya frecuencia aumentó en dichos meses.
+
+Los territorios Bálticos tienen un pasado complejo en sus relaciones con Rusia, las personas rusoparlantes que pasaron a formar parte de Letonia tras la disolución de la Unión Soviética, son personas excluídas de la arena política. Sin embargo, la instrumentalización del lenguaje como un arma por parte del Estado Ruso, da pauta a los Estados Bálticos para desarrollar estrategias de control, con lamentables consecuencias para las poblaciones rusoparlantes, como la restricción de la enseñanza del ruso en la educación pública o la cancelación de la transmisión de canales rusos en los medios. Si bien los países bálticos han sido dominados por Rusia en los siglos recientes, desde su independencia, el Estado letón ha luchado por priorizar su identidad cultural, con el lamentable costo de la marginalización de las personas que hablan ruso.
+
+
+# Apéndices
+
+## Tabla de Eventos
+
+Se describen los eventos seleccionados y las narrativas asociadas a la desinformación viralizada.
+
+```{r tabla_eventos}
+eventos %>% 
+  filter(Consider == 1) %>% 
+  select(Date, Event, Notes) %>% 
+  kbl(booktabs = TRUE,
+      longtable = TRUE,
+      col.names = c("Date", "Event", "Notes"),
+      linesep = "") %>%
+  kable_styling(latex_options = c(latex_options = c("repeat_header"))) %>% 
+  column_spec(c(1, 2, 3), width = c("5em", "15em", "15em"))
+```
+
+
+
+## Tabla de Otros Eventos
+
+Hubo otros eventos que se identificaron, sin embargo, no fueron elegidos para consideración del efecto que queríamos detectar. Sin embargo, algunos de ellos podrían de igual manera generar desconfianza en el estado.
+
+```{r tabla_eventos_no_considerados}
+eventos %>% 
+  filter(Consider == 0) %>% 
+  select(Date, Event, Notes) %>% 
+  kbl(booktabs = TRUE,
+      longtable = TRUE,
+      col.names = c("Date", "Event", "Notes"),
+      linesep = "") %>%
+  kable_styling(latex_options = c(latex_options = c("repeat_header"))) %>% 
+  column_spec(c(1, 2, 3), width = c("5em", "15em", "15em"))
+```
+
+
+
+## Efecto semana a semana de hablar ruso
+
+Por otra parte, podemos estudiar, de manera agnóstica a los eventos del contexto, el efecto semana a semana en la tasa de aparición de nuevos casos de Covid-19 con respecto a la presencia de rusoparlantes en una unidad territorial dada en Letonia.
+
+Consideremos una variable $T_t$ que corresponde a una indicadora para el periodo de tiempo $t$, indizado en semanas. Se considera la siguiente especificación.
+
+\begin{equation}
+y_{t,m} = \beta (rsp_m \times T_t) + \sum_j \delta_{j} X_{jm} + \eta_m + \delta_t + \epsilon_{t,m}
+\end{equation}
+
+Donde $\eta_m$ representa efectos fijos por unidad territorial y $\delta_t$ representa efectos fijos por fecha.  $\{X_{jm}\}$ corresponde a un conjunto de controles por unidad territorial.
+
+Podemos ver en la siguiente gráfica la evoluciòn del coefieciente $\beta$ en el periodo de abril de 2020 a julio de 2021.
+
+```{r}
+resultados_por_semana %>% 
+  filter(semana != 202053,
+         semana != 202132) %>%
+  mutate( # Generamos variables Date e intervalos de confianza y significancia para los coeficientes
+    Date = case_when( # Reconvirtiendo de número de semana a fecha
+      semana-202000 < 100 ~ as.Date(paste(floor(semana/100), # Si está en 2020
+                                          semana-202000, 1, sep="-"), "%Y-%U-%u"),
+      TRUE ~ as.Date(paste(floor(semana/100), # Si está en 2021
+                           semana-202100, 1, sep="-"), "%Y-%U-%u")),
+    lower = Estimate - `Std. Error`*qnorm(1-0.05/2),
+    upper = Estimate + `Std. Error`*qnorm(1-0.05/2),
+    significancia = as.factor(case_when(
+      (0.05 < `Pr(>|t|)`                     ) ~ 'No',
+      (0.01 < `Pr(>|t|)` & `Pr(>|t|)` <= 0.05) ~ '5%',
+      (                    `Pr(>|t|)` <= 0.01) ~ '1%'))) %>% 
+  filter(Date > ymd("2020-04-01"), Date < ymd("2021-08-15")) %>% # Ventana de interès
+  ggplot(aes(x = Date, y = Estimate, colour = significancia)) + 
+  geom_pointrange(aes(ymin = lower, ymax = upper)) + # Coeficientes semanales
+  ylab('New cases') + 
+  labs(title = 'New cases per 100 thou. hab.',
+       subtitle = 'Given the share of RSP',
+       colour = 'Significance') +
+  scale_color_manual(values = wes_palette(n = 4, name = "Moonrise2")) + 
+  scale_x_date(date_breaks = "2 months",
+               limits = c(ymd("2020-04-15"), ymd("2021-08-01"))) +
+  theme(axis.text.x = element_text(angle=45, hjust = 1),
+        legend.position = "bottom")
+```
+
+De esta gráfica se deduce que durante el punto más álgido de la incidencia de nuevos casos en Letonia (diciembre de 2020 y enero de 2021), hubo un efecto diferenciado con respecto a la proporción de hablantes de ruso de cada unidad territorial.
+
+# Bibliography
+
+\begin{itemize}
+
+
+
+\item COVID-19 studies, confirmed cases and outcomes. The Latvian Open Data Portal. Date accessed: 06 Aug. 2021. \url{https://data.gov.lv/dati/eng/dataset/covid-19}
+
+\item Latvian Census Data 2020. Official Statistics Portal. Central Statistical Bureau (CSB), Latvia. Retrieved from: \url{https://stat.gov.lv/en} and \url{https://stat.gov.lv/en/statistics-themes/population/population-number}
+
+
+
+\item (Kirch, 1992) Russians as a Minority in Contemporary Baltic States. Aksel Kirch. Bulletin of Peace Proposals , June 1992, Vol. 23, No. 2 (June 1992), pp. 205-212. 
+
+\item (Martínez, 2021) In Vaccines We Trust? The Effects of the CIA’s Vaccine Ruse on Immunization in Pakistan, Journal of the European Economic Association, Monica Martinez-Bravo, Andreas Stegmann, 2021;, jvab018, \url{https://doi.org/10.1093/jeea/jvab018}
+
+\item (Mölder, 2020) The Kremlin’s strategic narratives on the Baltic states during the COVID-19 crisis. Holger Mölder and Vladimir Sazonov. December 2020. Kwartalnik Bellona.
+
+\item Barnes, J. E., Rosenberg, M., Wong, E., As Virus Spreads, China and Russia See Openings for Disinformation, “New York Times”, 28.3.2020, access: \url{https://nyti.ms/3bSOPED} (27.5.2020).
+
+\item Echo chambers in the age of misinformation
+Michela Del Vicario, Alessandro Bessi, Fabiana Zollo, Fabio Petroni, Antonio Scala, Guido Caldarelli, H. Eugene Stanley, Walter Quattrociocchi
+Proceedings of the National Academy of Sciences Jan 2016, 113 (3) 554-559; DOI: 10.1073/pnas.1517441113
+
+\item Parlamento europeo, 2016. European Parliament resolution of 23 November 2016 on EU strategic communication to counteract propaganda against it by third parties. Available at: \url{https://bit.ly/3EYLYqh}
+
+\item First wave of disinformation, 59% of disinformation news on the Baltics was published in Latvia with caims of a pandemic-induced wave of Russophobia. Debunk EU, 2020. Retrieved from:  \url{https://www.debunkeu.org/post/debunk-eu-latvia-had-the-widest-spread-of-covid-19-related-disinformation-in-may}
+
+
+
+\item Carrieri V, Madio L, Principe F. Vaccine hesitancy and (fake) news: Quasi-experimental evidence from Italy. Health Econ. 2019 Nov;28(11):1377-1382. doi: 10.1002/hec.3937. Epub 2019 Aug 20. PMID: 31429153; PMCID: PMC6851894.
+
+\item Sten Hansson, Kati Orru, Sten Torpan, Asta Bäck, Austeja Kazemekaityte, Sunniva Frislid Meyer, Johanna Ludvigsen, Lucia Savadori, Alessandro Galvagni and Ala Pigrée (2021) Covid-19 information disorder: six types of harmful information during the pandemic in Europe, Journal of Risk Research, 24:3-4, 380-393, DOI: 10.1080/13669877.2020.1871058
+
+\item Andrey Makarychev and Vladimir Sazonov (2019) Populisms, popular geopolitics and the politics of belonging in Estonia, European Politics and Society, 20:4, 450-469, DOI: 10.1080/23745118.2019.1569341
+
+\item Cantarella, Michele and Fraccaroli, Nicolò and Volpe, Roberto Geno, Does Fake News Affect Voting Behaviour? (June 17, 2020). CEIS Working Paper No. 493, Available at SSRN: \url{https://ssrn.com/abstract=3629666} or \url{http://dx.doi.org/10.2139/ssrn.3629666}
+
+
+
+\item Bērziņa, Ieva. 2018. Political Trust and Russian Media in Latvia. Journal on Baltic Security. 4. 10.2478/jobs-2018-0008. 
+
+\item Rožukalne, Anda. 2012. Media audience development in Latvia (2004–2012). Media transformations, 2012, vol. 6, p. 144-157. 
+
+\item Bucholtz, Ianis. Media Use Among Social Networking Site Users in Latvia. International Journal of Communication, [S.l.], v. 9, p. 21, aug. 2015. ISSN 1932-8036. Available at: \url{https://ijoc.org/index.php/ijoc/article/view/3259}. Date accessed: 08 Nov. 2021.
+
+\item  Rozukalne, Anda. 2020. Monitoring Media Pluralism in the Digital Era: Application of the Media Pluralism Monitor in the European Union, Albania and Turkey in the years 2018-2019. Centre for Media Pluralism and Media Freedom, European University Institute.
+
+\item DataReportal (2021), “DIGITAL 2021: LATVIA” retrieved from \url{https://datareportal.com/reports/digital-2021-latvia}
+
+\item Media Landscapes, Latvia. European Journalism Centre (EJC). Retreived from \url{https://medialandscapes.org/country/latvia}
+
+\item Sander, Gordon F. "‘The pandemic has united us’: A media divide fades in the Baltics". The Christian Science Monitor. Retrieved from \url{https://www.csmonitor.com/World/Europe/2020/0618/The-pandemic-has-united-us-A-media-divide-fades-in-the-Baltics}
+
+
+
+\item Pennycook G, Cannon TD, Rand DG. Prior exposure increases perceived accuracy of fake news. J Exp Psychol Gen. 2018 Dec;147(12):1865-1880. doi: 10.1037/xge0000465. Epub 2018 Sep 24. PMID: 30247057; PMCID: PMC6279465.
+
+\item Bowles J, Larreguy H, Liu S (2020) Countering misinformation via WhatsApp: Preliminary evidence from the COVID-19 pandemic in Zimbabwe. PLOS ONE 15(10): e0240005. \url{https://doi.org/10.1371/journal.pone.0240005}
+
+\item Stefano DellaVigna, Ethan Kaplan, The Fox News Effect: Media Bias and Voting, The Quarterly Journal of Economics, Volume 122, Issue 3, August 2007, Pages 1187–1234, \url{https://doi.org/10.1162/qjec.122.3.1187}
+
+\item Ruben Durante, Brian Knight, Partisan Control, Media Bias, and Viewer Responses: Evidence from Berlusconi’s Italy, Journal of the European Economic Association, Volume 10, Issue 3, 1 June 2012, Pages 451–481, \url{https://doi.org/10.1111/j.1542-4774.2011.01060.x}
+
+\item Gordon Pennycook, David G. Rand, Lazy, not biased: Susceptibility to partisan fake news is better explained by lack of reasoning than by motivated reasoning, Cognition, Volume 188, 2019, Pages 39-50, ISSN 0010-0277.
+
+\item Nathan Walter, Jonathan Cohen, R. Lance Holbert and Yasmin Morag (2020) Fact-Checking: A Meta-Analysis of What Works and for Whom, Political Communication, 37:3, 350-375, DOI: 10.1080/10584609.2019.1668894
+
+\item  Yanagizawa-Drott, David, Bursztyn, Leonardo, Rao, Aakaash and Roth, Christopher. Working paper, July 2021 (Supersedes previous draft circulated under the title Misinformation During a Pandemic) R\&R – Review of Economic Studies
+
+\item Erlich, Aaron, Calvin Garner, Gordon Pennycook, and David G. Rand. 2021. “Does Analytic Thinking Insulate Against Pro-kremlin Disinformation? Evidence from Ukraine.” PsyArXiv. July 7. doi:10.31234/osf.io/4yrdj.
+
+
+\item Lord, Ryan. Russian Minority Populations in the Baltics. May 25, 2021. \url{https://storymaps.arcgis.com/stories/6cb4f0a7dcd64278b52840a7dc364127 }
+
+\item Chuang, Yu-Ning Aileen. Latvia: Battling Russian Propaganda, Moving slowly to the West. \url{https://nationalsecurityzone.medill.northwestern.edu/blog/snowball/latvia/}
+
+\item (DebunkEU 1, 2020) "Latvia had the widest spread of COVID-19 related disinformation in May", published on June 10th, 2020. \url{https://www.debunkeu.org/post/debunk-eu-latvia-had-the-widest-spread-of-covid-19-related-disinformation-in-may}
+
+\item (DebunkEU 2, 2020) "Which piece of the puzzle is Latvia in the Covid-19 vaccination campaign of European Union?", published on May 11th, 2020.
+  \url{https://www.debunkeu.org/post/which-piece-of-the-puzzle-is-latvia-in-the-covid-19-vaccination-campaign-of-european-union}
+
+\end{itemize}
+
+
+
+
+

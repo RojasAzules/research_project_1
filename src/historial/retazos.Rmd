@@ -1,7 +1,0 @@
-# retazos
-
-## Posible control
-
-Una de las variables que podría ser utilizada como control es el ingreso per cápita de la unidad territorial $m$. Una población con más o menos ingreso podría ser más o menos proclive a los efectos de la desinformación con respecto a las vacunas (y la confianza en los servicios de salud) y por ende a los efectos de la aparición de nuevos casos.
-
-
